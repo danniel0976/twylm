@@ -91,9 +91,6 @@ export default function AdminDashboardPage() {
             <p className="text-body mb-4">
               Create a new diary entry for Luke
             </p>
-            <span className="text-sm font-bold uppercase tracking-wider">
-              Start Writing →
-            </span>
           </Link>
 
           {/* My Entries */}
@@ -104,7 +101,7 @@ export default function AdminDashboardPage() {
               View and manage all your entries
             </p>
             <div className="text-sm font-bold uppercase tracking-wider">
-              {entriesCount} entries ({draftsCount} drafts) →
+              {entriesCount} entries ({draftsCount} drafts)
             </div>
           </Link>
 
@@ -113,11 +110,8 @@ export default function AdminDashboardPage() {
             <div className="text-4xl mb-4">🎵</div>
             <h2 className="text-headline mb-2">Spotify</h2>
             <p className="text-body mb-4">
-              Connect your Spotify to show what you're listening to
+              Connect your Spotify to show what you&apos;re listening to
             </p>
-            <span className="text-sm font-bold uppercase tracking-wider">
-              Connect →
-            </span>
           </Link>
 
           {/* Profile */}
@@ -127,9 +121,6 @@ export default function AdminDashboardPage() {
             <p className="text-body mb-4">
               Manage your account settings
             </p>
-            <span className="text-sm font-bold uppercase tracking-wider">
-              Settings →
-            </span>
           </Link>
         </div>
 

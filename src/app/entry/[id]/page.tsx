@@ -232,7 +232,7 @@ export default function EntryDetailPage() {
                       rel="noopener noreferrer"
                       className="block text-body hover:text-black underline"
                     >
-                      Song {i + 1} →
+                      Song {i + 1}
                     </a>
                   )
                 })}
@@ -255,7 +255,7 @@ export default function EntryDetailPage() {
                     rel="noopener noreferrer"
                     className="block text-body hover:text-black underline"
                   >
-                    Video {i + 1} →
+                    Video {i + 1}
                   </a>
                 ))}
               </div>

@@ -211,8 +211,8 @@ export default function ProfilePage() {
         </div>
 
         <div className="text-center mt-8">
-          <Link href="/admin/dashboard" className="design-nav-link">
-            ← Back to Admin
+          <Link href="/" className="design-nav-link">
+            ← Back to Calendar
           </Link>
         </div>
       </div>

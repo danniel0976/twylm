@@ -11,7 +11,7 @@ const DAN_EMAIL = 'danielhairiemir@gmail.com'
 
 export default function AdminPage() {
   const router = useRouter()
-  const [authUser, setAuthUser] = useState<{ id: string; email: string } | null>(null)
+  const [authUser, setAuthUser] = useState<{ id: string; email: string | undefined } | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -28,7 +28,7 @@ export default function AdminPage() {
         return
       }
       
-      setAuthUser(user)
+      setAuthUser({ id: user.id, email: user.email })
       // Redirect to dashboard
       router.push('/admin/dashboard')
     })

@@ -59,7 +59,7 @@ export default function AdminSpotifyPage() {
       
       // Update tokens
       localStorage.setItem('spotify_access_token', data.access_token)
-      localStorage.setItem('spotify_token_expiry', Date.now() + data.expires_in * 1000)
+      localStorage.setItem('spotify_token_expiry', String(Date.now() + data.expires_in * 1000))
       if (data.refresh_token) {
         localStorage.setItem('spotify_refresh_token', data.refresh_token)
       }
@@ -110,7 +110,7 @@ export default function AdminSpotifyPage() {
     const encoder = new TextEncoder()
     const data = encoder.encode(codeVerifier)
     crypto.subtle.digest('SHA-256', data).then(buffer => {
-      const codeChallenge = btoa(String.fromCharCode(...new Uint8Array(buffer)))
+      const codeChallenge = btoa(String.fromCharCode(...Array.from(new Uint8Array(buffer))))
         .replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_')
       
       const clientId = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID

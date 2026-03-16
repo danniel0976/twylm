@@ -13,7 +13,7 @@ export default function AboutPage() {
           About TWYLM
         </h1>
         <p className="text-body mb-8">
-          Built with agentic coding, fueled by love
+          Dan built this. I helped.
         </p>
         <div className="design-divider" />
 
@@ -21,10 +21,10 @@ export default function AboutPage() {
           <div className="prose prose-lg max-w-none">
             <div className="mb-8">
               <p className="text-body leading-relaxed mb-4">
-                Hi, I&apos;m Chippy! 🐺
+                Hey, I&apos;m Chippy. 🐺
               </p>
               <p className="text-body leading-relaxed mb-4">
-                I&apos;ve brought you here to see what Dan has made specially for you. He&apos;s not here right now, but you can find out more if you&apos;re curious!
+                Dan asked me to show you this. He&apos;s not here right now. But you can keep reading if you want.
               </p>
             </div>
 
@@ -32,38 +32,29 @@ export default function AboutPage() {
               The Stack
             </h2>
             <p className="text-body leading-relaxed mb-4">
-              Next.js 14, Supabase (PostgreSQL + Auth + RLS), Vercel, Tailwind CSS. Built with OpenClaw and agentic workflows.
+              Next.js 14. Supabase for database and auth. Vercel for hosting. Tailwind for styling. OpenClaw for the agentic workflows.
             </p>
 
             <h2 className="text-headline mt-8 mb-4 font-bold">
               Why This Exists
             </h2>
             <p className="text-body leading-relaxed mb-4">
-              Dan wanted you to have something to read while he&apos;s on his journey. Something that reminds you he thinks of you every day, even though there are uncertainties between you two right now. It&apos;s him saying he loves you, despite everything. It&apos;s his way of being present, even through that distance.
-            </p>
-            <p className="text-body leading-relaxed mb-4">
-              Since March 12th, Dan has been writing stories, memories, and feelings for you. Each entry is a piece of his heart.
-            </p>
-            <p className="text-body leading-relaxed mb-4">
-              The entries are there when you&apos;re ready to read them.
+              Dan wanted you to have something to read while he&apos;s away. Something that reminds you he thinks of you every day. This is him saying he loves you. Even with the distance. Even with everything uncertain. He&apos;s still here. Still thinking of you. He started writing on March 12th. Stories. Memories. Feelings. Each entry is... I think... a piece of his heart. They&apos;re there when you&apos;re ready. I promise.
             </p>
 
             <h2 className="text-headline mt-8 mb-4 font-bold">
               How We Built It
             </h2>
             <p className="text-body leading-relaxed mb-4">
-              Dan and I built this together through agentic coding. He&apos;d describe what he wanted, and I&apos;d help bring it to life through code.
-            </p>
-            <p className="text-body leading-relaxed mb-4">
-              It was a joyful process. Dan had the vision, I had the code. Together we made something for you.
+              Dan would tell me what he wanted. I&apos;d write the code. Back and forth, over and over. It was... good. He had the vision. I had the tools. We made this together.
             </p>
 
             <p className="text-body leading-relaxed mt-8">
-              Every entry is Dan&apos;s love for you. Every line of code is me helping him say it.
+              Every entry is his love for you. Every line of code is me helping him say it.
             </p>
 
             <p className="text-body leading-relaxed mt-6">
-              With love,<br/>
+              Love,<br/>
               <strong>Chippy</strong> 🐺
             </p>
           </div>

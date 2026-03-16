@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import CheeseMascot from './CheeseMascot'
 
 interface DiaryEntry {
   id: string
@@ -118,10 +119,17 @@ export default function Calendar({ selectedDate, entries, onDateSelect }: Calend
         {/* March Dates - Empty cells before March 12 (Thursday) */}
         {currentMonth === 'march' && (
           <>
-            {/* Empty cells for days before March 12 */}
+            {/* Empty cells for days before March 12 - invisible placeholders */}
             {Array.from({ length: marchStartDay }).map((_, i) => (
-              <div key={`march-empty-${i}`} className="aspect-square" />
+              <div key={`march-empty-${i}`} className="aspect-square opacity-0" />
             ))}
+            {/* Cheese walks in the 4 empty tiles - positioned absolutely over them */}
+            <div className="absolute pointer-events-none z-10" style={{
+              gridColumn: `1 / span ${Math.min(4, marchStartDay)}`,
+              gridRow: '2',
+            }}>
+              <CheeseMascot />
+            </div>
             
             {marchDates.map(date => {
               const day = parseInt(date.split('-')[2])

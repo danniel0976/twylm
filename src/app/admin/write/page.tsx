@@ -68,6 +68,10 @@ export default function AdminPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
+    await handleSaveWithStatus(status)
+  }
+
+  const handleSaveWithStatus = async (saveStatus: 'draft' | 'published') => {
     setLoading(true)
     setMessage(null)
 
@@ -91,7 +95,7 @@ export default function AdminPage() {
             photo_urls: photoUrls,
             video_urls: videoUrls,
             spotify_urls: spotifyUrls,
-            status,
+            status: saveStatus,
           })
           .eq('id', editingId)
           .select()
@@ -111,7 +115,7 @@ export default function AdminPage() {
             photo_urls: photoUrls,
             video_urls: videoUrls,
             spotify_urls: spotifyUrls,
-            status,
+            status: saveStatus,
           })
           .select()
           .single()
@@ -127,7 +131,15 @@ export default function AdminPage() {
 
       if (error) throw error
 
-      setMessage(status === 'draft' ? 'Draft saved! 💙' : 'Entry published! 💜')
+      setMessage(saveStatus === 'draft' ? 'Draft saved! 💙' : 'Entry published! 💜')
+      
+      // Redirect to my-entries after publishing
+      if (saveStatus === 'published') {
+        setTimeout(() => {
+          router.push('/my-entries')
+        }, 1000)
+        return
+      }
       
       setTitle('')
       setContent('')
@@ -427,9 +439,11 @@ export default function AdminPage() {
             <div className="flex gap-3 mt-8">
               <button
                 type="button"
-                onClick={() => {
+                onClick={async () => {
                   setStatus('draft')
-                  handleSave()
+                  // Wait for state to update, then save with explicit draft status
+                  await new Promise(resolve => setTimeout(resolve, 0))
+                  handleSaveWithStatus('draft')
                 }}
                 disabled={loading || !content}
                 className="bg-gray-200 text-gray-700 px-4 py-3 rounded font-bold uppercase tracking-wider hover:bg-gray-300 disabled:opacity-50 text-sm"
@@ -460,9 +474,6 @@ export default function AdminPage() {
         <div className="flex gap-4 mt-8">
           <Link href="/" className="design-nav-link">
             ← Back to Calendar
-          </Link>
-          <Link href="/admin/spotify" className="design-nav-link">
-            Spotify Connection →
           </Link>
         </div>
       </div>

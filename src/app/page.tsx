@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import Calendar from '@/components/Calendar'
 import Header from '@/components/Header'
 import SpotifyLastPlayed from '@/components/SpotifyLastPlayed'
+import CheeseMascot from '@/components/CheeseMascot'
 
 interface DiaryEntry {
   id: string
@@ -27,9 +28,11 @@ export default function HomePage() {
   useEffect(() => {
     const loadEntries = async () => {
       try {
+        // Only load published entries (not drafts)
         const { data, error } = await supabase
           .from('diary_entries')
           .select('*')
+          .eq('status', 'published')
           .order('date', { ascending: false })
 
         if (error) throw error
@@ -133,6 +136,11 @@ export default function HomePage() {
             {/* Real Spotify Last Played */}
             <SpotifyLastPlayed />
           </div>
+        </div>
+
+        {/* Cheese walks across full width between widget and calendar */}
+        <div className="relative w-full h-20 mb-8">
+          <CheeseMascot />
         </div>
 
         {loading ? (

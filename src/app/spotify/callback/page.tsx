@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
-export default function SpotifyCallbackPage() {
+function CallbackContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
@@ -42,7 +42,7 @@ export default function SpotifyCallbackPage() {
         body: JSON.stringify({
           code: code,
           code_verifier: codeVerifier || '',
-          redirect_uri: 'http://127.0.0.1:3000/spotify/callback',
+          redirect_uri: window.location.origin + '/spotify/callback',
         }),
       })
       
@@ -82,5 +82,20 @@ export default function SpotifyCallbackPage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function SpotifyCallbackPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="display-large mb-4">Connecting to Spotify...</h1>
+          <p className="text-gray-600">Please wait</p>
+        </div>
+      </div>
+    }>
+      <CallbackContent />
+    </Suspense>
   )
 }

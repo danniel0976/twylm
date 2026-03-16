@@ -25,8 +25,15 @@ export default function SpotifyLastPlayed() {
   const fetchSpotifyTrack = async () => {
     const token = localStorage.getItem('spotify_access_token')
     const expiry = localStorage.getItem('spotify_token_expiry')
+    const refreshToken = localStorage.getItem('spotify_refresh_token')
     
-    if (!token || (expiry && Date.now() > parseInt(expiry))) {
+    // If token expired but we have refresh token, auto-refresh
+    if (expiry && Date.now() > parseInt(expiry) && refreshToken) {
+      await refreshAccessToken(refreshToken)
+      return // Will re-call this function after refresh
+    }
+    
+    if (!token) {
       setNeedsAuth(true)
       setLoading(false)
       return
@@ -94,6 +101,42 @@ export default function SpotifyLastPlayed() {
     }
   }
 
+  const refreshAccessToken = async (refreshToken: string) => {
+    try {
+      const response = await fetch('/api/spotify/refresh', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          refresh_token: refreshToken,
+        }),
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error('Refresh failed:', errorData)
+        setNeedsAuth(true)
+        return
+      }
+      
+      const data = await response.json()
+      
+      // Store new tokens
+      localStorage.setItem('spotify_access_token', data.access_token)
+      localStorage.setItem('spotify_token_expiry', Date.now() + data.expires_in * 1000)
+      if (data.refresh_token) {
+        localStorage.setItem('spotify_refresh_token', data.refresh_token)
+      }
+      
+      // Retry fetching track
+      await fetchSpotifyTrack()
+    } catch (err) {
+      console.error('Token refresh error:', err)
+      setNeedsAuth(true)
+    }
+  }
+
   const handleSpotifyLogin = () => {
     // PKCE: Generate code verifier and challenge
     const array = new Uint32Array(28)
@@ -112,7 +155,7 @@ export default function SpotifyLastPlayed() {
       
       // Redirect to Spotify OAuth with PKCE
       const clientId = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID
-      const redirectUri = encodeURIComponent('http://127.0.0.1:3000/spotify/callback')
+      const redirectUri = encodeURIComponent(window.location.origin + '/spotify/callback')
       const scope = encodeURIComponent('user-read-recently-played user-read-currently-playing')
       const state = btoa(Math.random().toString(36).substring(7))
       
@@ -125,6 +168,17 @@ export default function SpotifyLastPlayed() {
 
   if (loading) {
     return null
+  }
+
+  if (needsAuth) {
+    return (
+      <button
+        onClick={handleSpotifyLogin}
+        className="flex items-center gap-3 px-6 py-4 rounded-full bg-green-500 text-white hover:bg-green-600"
+      >
+        <span className="font-bold">Connect Spotify</span>
+      </button>
+    )
   }
 
   if (!track) {

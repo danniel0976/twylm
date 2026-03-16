@@ -223,7 +223,7 @@ export default function MyEntriesPage() {
               {authUser.email}
             </p>
           </div>
-          <Link href="/admin" className="design-button px-6 py-3">
+          <Link href="/admin/write" className="design-button px-6 py-3">
             New Entry
           </Link>
         </div>
@@ -437,7 +437,7 @@ export default function MyEntriesPage() {
                             rel="noopener noreferrer"
                             className="text-body underline"
                           >
-                            Song {i + 1} →
+                            Song {i + 1}
                           </a>
                         )
                       })}
@@ -459,7 +459,7 @@ export default function MyEntriesPage() {
                           rel="noopener noreferrer"
                           className="text-body underline"
                         >
-                          Video {i + 1} →
+                          Video {i + 1}
                         </a>
                       ))}
                     </div>
