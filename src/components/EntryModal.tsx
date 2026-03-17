@@ -15,6 +15,12 @@ interface EntryModalProps {
   onClose: () => void
 }
 
+function getHeartColor(userName?: string) {
+  if (!userName) return '💙'
+  if (userName.toLowerCase() === 'luke') return '💜'
+  return '💚'
+}
+
 export default function EntryModal({ entry, onClose }: EntryModalProps) {
   if (!entry || !entry.date) {
     return null

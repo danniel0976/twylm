@@ -42,13 +42,20 @@ export default function HomePage() {
           for (const entry of data) {
             const { data: userData } = await supabase
               .from('users')
-              .select('name')
+              .select('name, email')
               .eq('id', entry.user_id)
               .single()
             
-            entriesMap[entry.date] = {
+            const userName = userData?.name || ''
+            const userEmail = userData?.email || ''
+            // Identify Luke by name (for production) or email (for UAT)
+            const isLuke = userName.toLowerCase() === 'luke' || userEmail === 'donuteatsalot@gmail.com'
+            const key = isLuke ? `${entry.date}_luke` : entry.date
+            const displayName = isLuke ? 'Luke' : userName
+            
+            entriesMap[key] = {
               ...entry,
-              user_name: userData?.name || undefined
+              user_name: displayName || undefined
             }
           }
         }
@@ -96,18 +103,21 @@ export default function HomePage() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white overflow-x-hidden">
+      {/* Purple gradient background from top to Cheese row */}
+      <div className="absolute inset-0 bg-gradient-to-b from-purple-900/20 via-purple-500/10 to-transparent pointer-events-none" style={{ height: '600px' }} />
+      
       <Header />
 
-      <div className="max-w-6xl mx-auto px-4 py-20">
-        <div className="mb-16">
+      <div className="max-w-6xl mx-auto px-4 py-20 relative">
+        <div className="mb-16 text-center">
           <h1 className="display-giant mb-4">
-            The Way You Love Me
+            Love Like No Tomorrow
           </h1>
           <p className="text-headline mb-4">
             Stories I tell Luke everyday until we see each other again
           </p>
-          <div className="flex items-center gap-6 flex-wrap">
+          <div className="flex items-center gap-6 flex-wrap justify-center">
             {days > 0 || hours > 0 || minutes > 0 || seconds > 0 ? (
               <div className="inline-flex items-center gap-6 px-8 py-4 rounded-full bg-purple-50 border border-purple-200">
                 <div className="text-center">
@@ -139,7 +149,7 @@ export default function HomePage() {
         </div>
 
         {/* Cheese walks across full width between widget and calendar */}
-        <div className="relative w-full h-20 mb-8">
+        <div className="relative w-full h-32 mb-8">
           <CheeseMascot />
         </div>
 

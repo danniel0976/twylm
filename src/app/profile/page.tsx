@@ -100,6 +100,60 @@ export default function ProfilePage() {
     }
   }
 
+  const [deletePassword, setDeletePassword] = useState('')
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+
+  const handleDeleteAccount = async () => {
+    if (!deletePassword) {
+      setMessage('❌ Please enter your password to confirm')
+      return
+    }
+    
+    setLoading(true)
+    setMessage(null)
+    
+    try {
+      // First verify password by signing in
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: authUser.email,
+        password: deletePassword
+      })
+      
+      if (signInError) {
+        setMessage('❌ Incorrect password')
+        setLoading(false)
+        return
+      }
+      
+      // Delete all user's diary entries first
+      const { error: entriesError } = await supabase
+        .from('diary_entries')
+        .delete()
+        .eq('user_id', authUser.id)
+      
+      if (entriesError) throw entriesError
+      
+      // Delete user record from users table
+      const { error: userError } = await supabase
+        .from('users')
+        .delete()
+        .eq('id', authUser.id)
+      
+      if (userError) throw userError
+      
+      setMessage('✅ Account deleted. Redirecting to login...')
+      
+      // Sign out and redirect to login page
+      setTimeout(async () => {
+        await supabase.auth.signOut()
+        router.push('/login')
+      }, 2000)
+    } catch (err) {
+      setMessage('❌ Failed to delete: ' + ((err as Error).message || 'Unknown error'))
+      setLoading(false)
+    }
+  }
+
   if (!authUser) {
     return null
   }
@@ -207,6 +261,54 @@ export default function ProfilePage() {
             <p className="text-xs text-gray-500 mt-2">
               You will be logged out and need to sign in with your new password.
             </p>
+          </div>
+
+          <div className="design-divider" />
+
+          {/* Delete Account */}
+          <div className="mt-8">
+            <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">
+              Delete Account
+            </label>
+            <p className="text-body text-gray-600 mb-4">
+              Enter your password to permanently delete your account and all entries.
+            </p>
+            {!showDeleteConfirm ? (
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="bg-red-600 text-white px-6 py-3 rounded font-bold uppercase tracking-wider hover:bg-red-700"
+              >
+                Delete Account
+              </button>
+            ) : (
+              <div className="space-y-4">
+                <input
+                  type="password"
+                  value={deletePassword}
+                  onChange={(e) => setDeletePassword(e.target.value)}
+                  placeholder="Enter your password"
+                  className="w-full design-input"
+                />
+                <div className="flex gap-4">
+                  <button
+                    onClick={() => {
+                      setShowDeleteConfirm(false)
+                      setDeletePassword('')
+                    }}
+                    className="bg-gray-200 text-gray-700 px-6 py-3 rounded font-bold uppercase tracking-wider hover:bg-gray-300"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleDeleteAccount}
+                    disabled={loading || !deletePassword}
+                    className="bg-red-600 text-white px-6 py-3 rounded font-bold uppercase tracking-wider hover:bg-red-700 disabled:opacity-50"
+                  >
+                    {loading ? 'Deleting...' : 'Confirm Delete'}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

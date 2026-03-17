@@ -42,7 +42,7 @@ function CallbackContent() {
         body: JSON.stringify({
           code: code,
           code_verifier: codeVerifier || '',
-          redirect_uri: window.location.origin + '/spotify/callback',
+          redirect_uri: 'https://www.lovelikenotomorrow.com/spotify/callback',
         }),
       })
       

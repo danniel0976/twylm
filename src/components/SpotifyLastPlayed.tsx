@@ -155,7 +155,7 @@ export default function SpotifyLastPlayed() {
       
       // Redirect to Spotify OAuth with PKCE
       const clientId = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID
-      const redirectUri = encodeURIComponent(window.location.origin + '/spotify/callback')
+      const redirectUri = encodeURIComponent('https://www.lovelikenotomorrow.com/spotify/callback')
       const scope = encodeURIComponent('user-read-recently-played user-read-currently-playing')
       const state = btoa(Math.random().toString(36).substring(7))
       
@@ -185,28 +185,29 @@ export default function SpotifyLastPlayed() {
     return null
   }
 
+  // Show on mobile with responsive sizing
   return (
     <a
       href={track.external_url}
       target="_blank"
       rel="noopener noreferrer"
-      className="flex items-center gap-3 px-6 py-4 rounded-full bg-gray-50 border border-gray-200 hover:bg-gray-100"
+      className="flex items-center gap-3 px-4 py-3 sm:px-6 sm:py-4 rounded-full bg-gray-50 border border-gray-200 hover:bg-gray-100"
     >
       {track.image && (
         <img
           src={track.image}
           alt={track.album}
-          className="w-10 h-10 rounded object-cover"
+          className="w-8 h-8 sm:w-10 sm:h-10 rounded object-cover"
         />
       )}
       <div className="text-left">
         <p className="text-xs font-bold uppercase tracking-wider text-gray-500">
           Dan is playing
         </p>
-        <p className="text-sm font-bold truncate max-w-[200px]">
+        <p className="text-sm font-bold truncate max-w-[150px] sm:max-w-[200px]">
           {track.song} - {track.artist}
         </p>
-        <p className="text-xs text-gray-400 mt-1">
+        <p className="text-xs text-gray-400 mt-1 hidden sm:block">
           {new Date(track.played_at).toLocaleString('en-US', {
             month: 'short',
             day: 'numeric',

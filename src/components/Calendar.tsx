@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import CheeseMascot from './CheeseMascot'
 
 interface DiaryEntry {
   id: string
@@ -18,7 +17,7 @@ interface DiaryEntry {
 
 interface CalendarProps {
   selectedDate: string | null
-  entries: Record<string, DiaryEntry>
+  entries: Record<string, DiaryEntry>  // Key: date or date_luke, Value: entry
   onDateSelect: (date: string | null) => void
 }
 
@@ -26,6 +25,7 @@ export default function Calendar({ selectedDate, entries, onDateSelect }: Calend
   const [currentMonth, setCurrentMonth] = useState<'march' | 'april'>('march')
   const [hoveredDate, setHoveredDate] = useState<string | null>(null)
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState<Record<string, number>>({})
+  const [hideDelay, setHideDelay] = useState<NodeJS.Timeout | null>(null)
 
   // March 12-31, 2026 (starting from last Thursday)
   const marchDates = []
@@ -53,12 +53,6 @@ export default function Calendar({ selectedDate, entries, onDateSelect }: Calend
   }
   const isSelected = (date: string) => selectedDate === date
 
-  const getHeartColor = (userName?: string) => {
-    if (!userName) return '💙'
-    if (userName.toLowerCase() === 'luke') return '💜'
-    return '💚'
-  }
-
   const getDayName = (date: string) => {
     const d = new Date(date)
     return d.toLocaleDateString('en-US', { weekday: 'short' })
@@ -80,6 +74,174 @@ export default function Calendar({ selectedDate, entries, onDateSelect }: Calend
 
     return () => clearInterval(interval)
   }, [entries])
+
+  // Render a single date tile
+  const renderTile = (date: string, day: number) => {
+    const danEntry = entries[date]  // Dan's entry (priority) - key is just date
+    const lukeEntry = entries[date + '_luke']  // Luke's entry - key is date_luke
+    const has = danEntry || lukeEntry
+    const today = isToday(date)
+    const selected = isSelected(date)
+    const hovered = hoveredDate === date
+    const entry = danEntry || lukeEntry  // Show Dan's if exists, otherwise Luke's
+    const dayName = getDayName(date)
+    const photoIndex = currentPhotoIndex[date + '_luke'] || 0
+    const isLukeMultiPhoto = lukeEntry?.user_name?.toLowerCase() === 'luke' && (lukeEntry.photo_urls?.length || 0) > 1
+    const hasBothEntries = danEntry && lukeEntry  // Dan + Luke both have entries
+
+    const handleMouseEnter = () => {
+      if (hideDelay) {
+        clearTimeout(hideDelay)
+        setHideDelay(null)
+      }
+      setHoveredDate(date)
+    }
+
+    const handleMouseLeave = () => {
+      // Delay hiding so user can move to bubble
+      const delay = setTimeout(() => {
+        setHoveredDate(null)
+      }, 300) // 300ms delay
+      setHideDelay(delay)
+    }
+
+    return (
+      <div
+        key={date}
+        className="relative aspect-[4/5] p-1 group"
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
+        <Link
+          href={has ? `/entry/${entry.id}` : '#'}
+          onClick={(e) => {
+            if (!has) e.preventDefault()
+            else onDateSelect(date)
+          }}
+          className={`w-full h-full rounded-lg flex flex-col items-center justify-center transition-all relative design-card overflow-hidden ${
+            selected
+              ? 'bg-black text-white shadow-lg scale-105'
+              : entry?.photo_urls?.length
+                ? 'bg-gray-900 hover:bg-gray-800'
+                : has
+                  ? 'bg-gray-50 hover:bg-gray-100'
+                  : today
+                    ? 'bg-gray-100'
+                    : 'bg-white hover:bg-gray-50'
+          }`}
+        >
+          {entry?.photo_urls?.length ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={entry.photo_urls[photoIndex]}
+              alt="Entry thumbnail"
+              className="absolute inset-0 w-full h-full object-cover"
+              onError={(e) => {
+                e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23ddd" width="200" height="200"/%3E%3Ctext fill="%23999" x="50%25" y="50%25" text-anchor="middle"%3E💚%3C/text%3E%3C/svg%3E'
+              }}
+            />
+          ) : null}
+          
+          {/* Heart indicators at top-right corner - show both if both have entries */}
+          {has && (
+            <div className="absolute top-2 right-2 z-20 text-lg drop-shadow-lg flex gap-1">
+              {danEntry && <span>💚</span>}
+              {lukeEntry && <span>💜</span>}
+            </div>
+          )}
+          
+          {/* Photo count indicator for multi-photo entries */}
+          {isLukeMultiPhoto && (
+            <div className="absolute top-2 left-2 z-20 text-xs font-bold text-white drop-shadow-lg bg-black/50 px-2 py-1 rounded">
+              {photoIndex + 1}/{lukeEntry.photo_urls?.length}
+            </div>
+          )}
+          
+          <div className={`relative z-10 flex flex-col items-center ${
+            entry?.photo_urls?.length ? 'text-white drop-shadow-lg' : 'text-gray-900'
+          }`}>
+            <span className="text-xs font-bold uppercase mb-1">{dayName}</span>
+            <span className="text-2xl font-bold">{day}</span>
+          </div>
+        </Link>
+
+        {/* Hover Bubble - Desktop only - Shows entry details + link to Luke's entry if exists */}
+        {entry && (
+          <div
+            className={`hidden md:block absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 bg-white rounded-xl shadow-2xl p-5 z-50 border border-gray-200 ${
+              hovered ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'
+            }`}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+          >
+            <div className="flex items-center gap-3 mb-3">
+              <span className="text-3xl">{entry.user_name?.toLowerCase() === 'luke' ? '💜' : '💚'}</span>
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-gray-500">
+                  {entry.user_name || 'Unknown'}
+                </span>
+                <p className="text-sm text-gray-600">{date}</p>
+              </div>
+            </div>
+            
+            {entry.title && (
+              <h3 className="text-lg font-bold mb-2">{entry.title}</h3>
+            )}
+            
+            {/* Photo count indicator */}
+            {(entry.photo_urls?.length || 0) > 0 && (
+              <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">
+                📸 {entry.photo_urls?.length} photo{(entry.photo_urls?.length || 0) > 1 ? 's' : ''}
+              </p>
+            )}
+            
+            {(entry.video_urls?.length || 0) > 0 && (() => {
+                const youtubeUrls = entry.video_urls.filter(u => u.includes('youtube.com') || u.includes('youtu.be'))
+                const fileUrls = entry.video_urls.filter(u => !u.includes('youtube.com') && !u.includes('youtu.be'))
+                return (
+                  <>
+                    {fileUrls.length > 0 && (
+                      <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">
+                        🎥 {fileUrls.length} video{fileUrls.length > 1 ? 's' : ''}
+                      </p>
+                    )}
+                    {youtubeUrls.length > 0 && (
+                      <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">
+                        🎬 {youtubeUrls.length} video of the day{youtubeUrls.length > 1 ? 's' : ''}
+                      </p>
+                    )}
+                  </>
+                )
+              })()}
+            
+            {(entry.spotify_urls?.length || 0) > 0 && (
+              <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-3">
+                🎵 {entry.spotify_urls?.length} song{(entry.spotify_urls?.length || 0) > 1 ? 's' : ''}
+              </p>
+            )}
+            
+            <div className="mt-4 pt-3 border-t border-gray-200">
+              <Link
+                href={`/entry/${entry.id}`}
+                className="block text-center text-sm font-bold uppercase tracking-wider bg-black text-white px-4 py-2 rounded hover:bg-gray-800 mb-2"
+              >
+                View {entry.user_name || 'Entry'}'s Entry
+              </Link>
+              {/* If Luke also has an entry for this date, show link to it */}
+              {lukeEntry && (
+                <Link
+                  href={`/entry/${lukeEntry.id}`}
+                  className="block text-center text-sm font-bold uppercase tracking-wider bg-purple-900 text-white px-4 py-2 rounded hover:bg-purple-800"
+                >
+                  View Luke's Entry 💜
+                </Link>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div>
@@ -119,140 +281,14 @@ export default function Calendar({ selectedDate, entries, onDateSelect }: Calend
         {/* March Dates - Empty cells before March 12 (Thursday) */}
         {currentMonth === 'march' && (
           <>
-            {/* Empty cells for days before March 12 - invisible placeholders */}
+            {/* Empty cells for days before March 12 */}
             {Array.from({ length: marchStartDay }).map((_, i) => (
-              <div key={`march-empty-${i}`} className="aspect-square opacity-0" />
+              <div key={`march-empty-${i}`} className="aspect-square" />
             ))}
-            {/* Cheese walks in the 4 empty tiles - positioned absolutely over them */}
-            <div className="absolute pointer-events-none z-10" style={{
-              gridColumn: `1 / span ${Math.min(4, marchStartDay)}`,
-              gridRow: '2',
-            }}>
-              <CheeseMascot />
-            </div>
             
             {marchDates.map(date => {
               const day = parseInt(date.split('-')[2])
-              const has = hasEntry(date)
-              const today = isToday(date)
-              const selected = isSelected(date)
-              const hovered = hoveredDate === date
-              const entry = entries[date]
-              const dayName = getDayName(date)
-              const photoIndex = currentPhotoIndex[date] || 0
-              const isLukeMultiPhoto = entry?.user_name?.toLowerCase() === 'luke' && (entry.photo_urls?.length || 0) > 1
-
-              return (
-                <div
-                  key={date}
-                  className="relative aspect-[4/5] p-1 group"
-                  onMouseEnter={() => setHoveredDate(date)}
-                  onMouseLeave={() => setHoveredDate(null)}
-                >
-                  <Link
-                    href={has ? `/entry/${entry.id}` : '#'}
-                    onClick={(e) => {
-                      if (!has) e.preventDefault()
-                      else onDateSelect(date)
-                    }}
-                    className={`w-full h-full rounded-lg flex flex-col items-center justify-center transition-all relative design-card overflow-hidden ${
-                      selected
-                        ? 'bg-black text-white shadow-lg scale-105'
-                        : has && entry?.photo_urls?.length
-                          ? 'bg-gray-900 hover:bg-gray-800'
-                          : has
-                            ? 'bg-gray-50 hover:bg-gray-100'
-                            : today
-                              ? 'bg-gray-100'
-                              : 'bg-white hover:bg-gray-50'
-                    }`}
-                  >
-                    {has && entry?.photo_urls?.length ? (
-                      /* eslint-disable-next-line @next/next/no-img-element */
-                      <img
-                        src={entry.photo_urls[photoIndex]}
-                        alt="Entry thumbnail"
-                        className="absolute inset-0 w-full h-full object-cover"
-                        onError={(e) => {
-                          e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23ddd" width="200" height="200"/%3E%3Ctext fill="%23999" x="50%25" y="50%25" text-anchor="middle"%3E💚%3C/text%3E%3C/svg%3E'
-                        }}
-                      />
-                    ) : null}
-                    
-                    {/* Heart indicator at top-right corner */}
-                    {has && (
-                      <div className="absolute top-2 right-2 z-20 text-lg drop-shadow-lg">
-                        {getHeartColor(entry?.user_name)}
-                      </div>
-                    )}
-                    
-                    {/* Photo count indicator for multi-photo entries */}
-                    {isLukeMultiPhoto && (
-                      <div className="absolute top-2 left-2 z-20 text-xs font-bold text-white drop-shadow-lg bg-black/50 px-2 py-1 rounded">
-                        {photoIndex + 1}/{entry.photo_urls?.length}
-                      </div>
-                    )}
-                    
-                    <div className={`relative z-10 flex flex-col items-center ${
-                      has && entry?.photo_urls?.length ? 'text-white drop-shadow-lg' : 'text-gray-900'
-                    }`}>
-                      <span className="text-xs font-bold uppercase mb-1">{dayName}</span>
-                      <span className="text-2xl font-bold">{day}</span>
-                    </div>
-                  </Link>
-
-                  {/* Hover Bubble - Persistent on hover (tile + bubble) */}
-                  {has && entry && (
-                    <div
-                      className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 bg-white rounded-xl shadow-2xl p-5 z-50 border border-gray-200 ${
-                        hovered ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3 mb-3">
-                        <span className="text-3xl">{getHeartColor(entry.user_name)}</span>
-                        <div>
-                          <span className="text-xs font-bold uppercase tracking-wider text-gray-500">
-                            {entry.user_name || 'Unknown'}
-                          </span>
-                          <p className="text-sm text-gray-600">{date}</p>
-                        </div>
-                      </div>
-                      
-                      {entry.title && (
-                        <h3 className="text-lg font-bold mb-2">{entry.title}</h3>
-                      )}
-                      
-                      {/* Photo count indicator */}
-                      {(entry.photo_urls?.length || 0) > 0 && (
-                        <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">
-                          📸 {entry.photo_urls?.length} photo{(entry.photo_urls?.length || 0) > 1 ? 's' : ''}
-                        </p>
-                      )}
-                      
-                      {(entry.video_urls?.length || 0) > 0 && (
-                        <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">
-                          🎥 {entry.video_urls?.length} video{(entry.video_urls?.length || 0) > 1 ? 's' : ''}
-                        </p>
-                      )}
-                      
-                      {(entry.spotify_urls?.length || 0) > 0 && (
-                        <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-3">
-                          🎵 {entry.spotify_urls?.length} song{(entry.spotify_urls?.length || 0) > 1 ? 's' : ''} of the day
-                        </p>
-                      )}
-                      
-                      <div className="mt-4 pt-3 border-t border-gray-200">
-                        <Link
-                          href={`/entry/${entry.id}`}
-                          className="block text-center text-sm font-bold uppercase tracking-wider bg-black text-white px-4 py-2 rounded hover:bg-gray-800"
-                        >
-                          View Full Entry
-                        </Link>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )
+              return renderTile(date, day)
             })}
           </>
         )}
@@ -267,126 +303,7 @@ export default function Calendar({ selectedDate, entries, onDateSelect }: Calend
             
             {aprilDates.map(date => {
               const day = parseInt(date.split('-')[2])
-              const has = hasEntry(date)
-              const today = isToday(date)
-              const selected = isSelected(date)
-              const hovered = hoveredDate === date
-              const entry = entries[date]
-              const dayName = getDayName(date)
-              const photoIndex = currentPhotoIndex[date] || 0
-              const isLukeMultiPhoto = entry?.user_name?.toLowerCase() === 'luke' && (entry.photo_urls?.length || 0) > 1
-
-              return (
-                <div
-                  key={date}
-                  className="relative aspect-[4/5] p-1 group"
-                  onMouseEnter={() => setHoveredDate(date)}
-                  onMouseLeave={() => setHoveredDate(null)}
-                >
-                  <Link
-                    href={has ? `/entry/${entry.id}` : '#'}
-                    onClick={(e) => {
-                      if (!has) e.preventDefault()
-                      else onDateSelect(date)
-                    }}
-                    className={`w-full h-full rounded-lg flex flex-col items-center justify-center transition-all relative design-card overflow-hidden ${
-                      selected
-                        ? 'bg-black text-white shadow-lg scale-105'
-                        : has && entry?.photo_urls?.length
-                          ? 'bg-gray-900 hover:bg-gray-800'
-                          : has
-                            ? 'bg-gray-50 hover:bg-gray-100'
-                            : today
-                              ? 'bg-gray-100'
-                              : 'bg-white hover:bg-gray-50'
-                    }`}
-                  >
-                    {has && entry?.photo_urls?.length ? (
-                      /* eslint-disable-next-line @next/next/no-img-element */
-                      <img
-                        src={entry.photo_urls[photoIndex]}
-                        alt="Entry thumbnail"
-                        className="absolute inset-0 w-full h-full object-cover"
-                        onError={(e) => {
-                          e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23ddd" width="200" height="200"/%3E%3Ctext fill="%23999" x="50%25" y="50%25" text-anchor="middle"%3E💚%3C/text%3E%3C/svg%3E'
-                        }}
-                      />
-                    ) : null}
-                    
-                    {/* Heart indicator at top-right corner */}
-                    {has && (
-                      <div className="absolute top-2 right-2 z-20 text-lg drop-shadow-lg">
-                        {getHeartColor(entry?.user_name)}
-                      </div>
-                    )}
-                    
-                    {/* Photo count indicator for multi-photo entries */}
-                    {isLukeMultiPhoto && (
-                      <div className="absolute top-2 left-2 z-20 text-xs font-bold text-white drop-shadow-lg bg-black/50 px-2 py-1 rounded">
-                        {photoIndex + 1}/{entry.photo_urls?.length}
-                      </div>
-                    )}
-                    
-                    <div className={`relative z-10 flex flex-col items-center ${
-                      has && entry?.photo_urls?.length ? 'text-white drop-shadow-lg' : 'text-gray-900'
-                    }`}>
-                      <span className="text-xs font-bold uppercase mb-1">{dayName}</span>
-                      <span className="text-2xl font-bold">{day}</span>
-                    </div>
-                  </Link>
-
-                  {/* Hover Bubble - Persistent on hover (tile + bubble) */}
-                  {has && entry && (
-                    <div
-                      className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 bg-white rounded-xl shadow-2xl p-5 z-50 border border-gray-200 ${
-                        hovered ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3 mb-3">
-                        <span className="text-3xl">{getHeartColor(entry.user_name)}</span>
-                        <div>
-                          <span className="text-xs font-bold uppercase tracking-wider text-gray-500">
-                            {entry.user_name || 'Unknown'}
-                          </span>
-                          <p className="text-sm text-gray-600">{date}</p>
-                        </div>
-                      </div>
-                      
-                      {entry.title && (
-                        <h3 className="text-lg font-bold mb-2">{entry.title}</h3>
-                      )}
-                      
-                      {/* Photo count indicator */}
-                      {(entry.photo_urls?.length || 0) > 0 && (
-                        <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">
-                          📸 {entry.photo_urls?.length} photo{(entry.photo_urls?.length || 0) > 1 ? 's' : ''}
-                        </p>
-                      )}
-                      
-                      {(entry.video_urls?.length || 0) > 0 && (
-                        <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">
-                          🎥 {entry.video_urls?.length} video{(entry.video_urls?.length || 0) > 1 ? 's' : ''}
-                        </p>
-                      )}
-                      
-                      {(entry.spotify_urls?.length || 0) > 0 && (
-                        <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-3">
-                          🎵 {entry.spotify_urls?.length} song{(entry.spotify_urls?.length || 0) > 1 ? 's' : ''} of the day
-                        </p>
-                      )}
-                      
-                      <div className="mt-4 pt-3 border-t border-gray-200">
-                        <Link
-                          href={`/entry/${entry.id}`}
-                          className="block text-center text-sm font-bold uppercase tracking-wider bg-black text-white px-4 py-2 rounded hover:bg-gray-800"
-                        >
-                          View Full Entry
-                        </Link>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )
+              return renderTile(date, day)
             })}
           </>
         )}

@@ -14,11 +14,9 @@ export default function LoginPage() {
   const [message, setMessage] = useState<string | null>(null)
   const [isSignUp, setIsSignUp] = useState(false)
   
-  // Service role key for bypassing RLS (defined at component scope)
-  const serviceRoleKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ0dnJmemZndWRtcWFuaHFreGlyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MzU0MTg4NywiZXhwIjoyMDg5MTE3ODg3fQ.J7-u-w8XSmtTb0tNJ'
-
   const checkRoleAvailability = async (selectedName: string) => {
     const { createClient } = await import('@supabase/supabase-js')
+    const serviceRoleKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ0dnJmemZndWRtcWFuaHFreGlyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MzU0MTg4NywiZXhwIjoyMDg5MTE3ODg3fQ.J7-u-w8XSmtTb0tNJascYA1S0PUcEBVQjNpIu7uXJoc'
     const supabaseAdmin = createClient(
       'https://rtvrfzfgudmqanhqkxir.supabase.co',
       serviceRoleKey
@@ -42,6 +40,10 @@ export default function LoginPage() {
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault()
+    await handleAuthWithStatus()
+  }
+
+  const handleAuthWithStatus = async () => {
     setLoading(true)
     setMessage(null)
 
@@ -69,22 +71,26 @@ export default function LoginPage() {
         if (error) throw error
         
         // Save user's name to database using service role key (bypasses RLS)
-        if (data.user) {
-          const { createClient } = await import('@supabase/supabase-js')
-          const supabaseAdmin = createClient(
-            'https://rtvrfzfgudmqanhqkxir.supabase.co',
-            serviceRoleKey
+        if (data?.user) {
+          const serviceRoleKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ0dnJmemZndWRtcWFuaHFreGlyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MzU0MTg4NywiZXhwIjoyMDg5MTE3ODg3fQ.J7-u-w8XSmtTb0tNJascYA1S0PUcEBVQjNpIu7uXJoc'
+          const supabaseAdmin = await import('@supabase/supabase-js').then(({ createClient }) => 
+            createClient('https://rtvrfzfgudmqanhqkxir.supabase.co', serviceRoleKey)
           )
           
+          // Try to insert, ignore if FK constraint fails (user will be created on first access)
           const { error: insertError } = await supabaseAdmin
             .from('users')
             .upsert({
               id: data.user.id,
               email,
               name,
-              role: 'user'
+              role: 'hoster'
             })
-          if (insertError) throw insertError
+          
+          // Ignore FK constraint errors - user record can be created on first login
+          if (insertError && !insertError.message.includes('foreign key')) {
+            throw insertError
+          }
         }
         
         setMessage('Account created! Please check your email to confirm.')
@@ -136,6 +142,12 @@ export default function LoginPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    handleAuthWithStatus()
+                  }
+                }}
                 required
                 className="w-full design-input"
                 placeholder="you@example.com"
@@ -150,6 +162,12 @@ export default function LoginPage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    handleAuthWithStatus()
+                  }
+                }}
                 required
                 className="w-full design-input"
                 placeholder="••••••••"

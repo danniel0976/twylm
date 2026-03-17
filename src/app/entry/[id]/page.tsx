@@ -120,6 +120,27 @@ export default function EntryDetailPage() {
     return null
   }
 
+  // Extract YouTube video ID from URL
+  const getYouTubeId = (url: string) => {
+    const patterns = [
+      /youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/,
+      /youtu\.be\/([a-zA-Z0-9_-]+)/,
+      /youtube\.com\/embed\/([a-zA-Z0-9_-]+)/,
+      /youtube\.com\/v\/([a-zA-Z0-9_-]+)/,
+    ]
+    for (const pattern of patterns) {
+      const match = url.match(pattern)
+      if (match) return match[1]
+    }
+    return null
+  }
+
+  // Convert YouTube URL to embed URL
+  const getYouTubeEmbedUrl = (url: string) => {
+    const id = getYouTubeId(url)
+    return id ? `https://www.youtube.com/embed/${id}` : null
+  }
+
   const handleEdit = () => {
     router.push(`/admin/write?edit=${entry.id}`)
   }
@@ -172,6 +193,44 @@ export default function EntryDetailPage() {
             </h1>
           )}
 
+          {/* Videos Section - YouTube Embeds (ABOVE text, centered) */}
+          {entry.video_urls?.length ? (
+            <div className="mb-12">
+              <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-6">
+                🎥 Videos
+              </p>
+              <div className="max-w-2xl mx-auto space-y-6">
+                {entry.video_urls.map((url, i) => {
+                  const embedUrl = getYouTubeEmbedUrl(url)
+                  return embedUrl ? (
+                    <div key={i} className="rounded-lg overflow-hidden bg-black shadow-lg">
+                      <iframe
+                        src={embedUrl}
+                        width="100%"
+                        height="315"
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                        loading="lazy"
+                        className="w-full"
+                      />
+                    </div>
+                  ) : (
+                    <a
+                      key={i}
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block text-body hover:text-black underline"
+                    >
+                      Video {i + 1}
+                    </a>
+                  )
+                })}
+              </div>
+            </div>
+          ) : null}
+
           <div className="design-divider" />
 
           <div className="mt-6">
@@ -209,7 +268,7 @@ export default function EntryDetailPage() {
               <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-6">
                 🎵 Song of the Day
               </p>
-              <div className="max-w-md space-y-6">
+              <div className="max-w-md mx-auto space-y-6">
                 {entry.spotify_urls.map((url, i) => {
                   const embedUrl = getSpotifyEmbedUrl(url)
                   return embedUrl ? (
@@ -236,28 +295,6 @@ export default function EntryDetailPage() {
                     </a>
                   )
                 })}
-              </div>
-            </div>
-          ) : null}
-
-          {/* Videos Section */}
-          {entry.video_urls?.length ? (
-            <div className="mb-12">
-              <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-6">
-                🎥 Videos
-              </p>
-              <div className="space-y-4">
-                {entry.video_urls.map((url, i) => (
-                  <a
-                    key={i}
-                    href={url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block text-body hover:text-black underline"
-                  >
-                    Video {i + 1}
-                  </a>
-                ))}
               </div>
             </div>
           ) : null}

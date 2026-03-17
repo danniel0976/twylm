@@ -13,7 +13,8 @@ export default function AdminPage() {
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [photoUrls, setPhotoUrls] = useState<string[]>([])
-  const [videoUrls, setVideoUrls] = useState<string[]>([])
+  const [videoFileUrls, setVideoFileUrls] = useState<string[]>([])
+  const [youtubeUrls, setYoutubeUrls] = useState<string[]>([])
   const [spotifyUrls, setSpotifyUrls] = useState<string[]>([])
   const [status, setStatus] = useState<'draft' | 'published'>('draft')
   const [loading, setLoading] = useState(false)
@@ -57,7 +58,8 @@ export default function AdminPage() {
         setTitle(data.title || '')
         setContent(data.content || '')
         setPhotoUrls(data.photo_urls || [])
-        setVideoUrls(data.video_urls || [])
+        setVideoFileUrls((data.video_urls || []).filter(u => !u.includes('youtube.com') && !u.includes('youtu.be')))
+        setYoutubeUrls((data.video_urls || []).filter(u => u.includes('youtube.com') || u.includes('youtu.be')))
         setSpotifyUrls(data.spotify_urls || [])
         setStatus(data.status || 'draft')
       }
@@ -84,6 +86,9 @@ export default function AdminPage() {
     try {
       let data, error
       
+      // Combine video files and YouTube URLs into single array for DB
+      const allVideoUrls = [...videoFileUrls, ...youtubeUrls]
+      
       if (editingId) {
         // Update existing entry by ID
         const result = await supabase
@@ -93,7 +98,7 @@ export default function AdminPage() {
             title,
             content,
             photo_urls: photoUrls,
-            video_urls: videoUrls,
+            video_urls: allVideoUrls,
             spotify_urls: spotifyUrls,
             status: saveStatus,
           })
@@ -113,7 +118,7 @@ export default function AdminPage() {
             title,
             content,
             photo_urls: photoUrls,
-            video_urls: videoUrls,
+            video_urls: allVideoUrls,
             spotify_urls: spotifyUrls,
             status: saveStatus,
           })
@@ -144,7 +149,8 @@ export default function AdminPage() {
       setTitle('')
       setContent('')
       setPhotoUrls([])
-      setVideoUrls([])
+      setVideoFileUrls([])
+      setYoutubeUrls([])
       setSpotifyUrls([])
       setStatus('draft')
     } catch (err) {
@@ -240,6 +246,20 @@ export default function AdminPage() {
     return null
   }
 
+  const getYouTubeEmbedUrl = (url: string) => {
+    if (!url) return null
+    const patterns = [
+      /youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/,
+      /youtu\.be\/([a-zA-Z0-9_-]+)/,
+      /youtube\.com\/embed\/([a-zA-Z0-9_-]+)/,
+    ]
+    for (const pattern of patterns) {
+      const match = url.match(pattern)
+      if (match) return `https://www.youtube.com/embed/${match[1]}`
+    }
+    return null
+  }
+
   if (!authUser) {
     return (
       <div className="min-h-screen bg-white">
@@ -327,7 +347,7 @@ export default function AdminPage() {
 
             <div>
               <label className="block text-sm font-bold uppercase tracking-wider mb-2">
-                Photos from PC
+                📷 Photos
               </label>
               <input
                 ref={photoInputRef}
@@ -358,7 +378,7 @@ export default function AdminPage() {
 
             <div>
               <label className="block text-sm font-bold uppercase tracking-wider mb-2">
-                Videos from PC
+                🎥 Videos
               </label>
               <input
                 ref={videoInputRef}
@@ -368,22 +388,71 @@ export default function AdminPage() {
                 disabled={uploading}
                 className="w-full text-sm"
               />
-              {videoUrls.length > 0 && (
+              {videoFileUrls.length > 0 && (
                 <div className="space-y-2 mt-2">
-                  {videoUrls.map((url, i) => (
+                  {videoFileUrls.map((url, i) => (
                     <div key={i} className="flex items-center justify-between bg-gray-100 p-2 rounded">
                       <a href={url} target="_blank" className="text-sm underline">
                         Video {i + 1}
                       </a>
                       <button
                         type="button"
-                        onClick={() => removeVideo(i)}
+                        onClick={() => setVideoFileUrls(videoFileUrls.filter((_, idx) => idx !== i))}
                         className="text-red-600 text-sm"
                       >
                         Remove
                       </button>
                     </div>
                   ))}
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold uppercase tracking-wider mb-2">
+                🎬 Video of the Day
+              </label>
+              <input
+                type="text"
+                value={youtubeUrls.join(',')}
+                onChange={(e) => setYoutubeUrls(e.target.value.split(',').filter(url => url.trim()))}
+                placeholder="Paste YouTube URLs separated by commas"
+                className="w-full design-input"
+              />
+              {youtubeUrls.length > 0 && (
+                <div className="space-y-3 mt-3">
+                  {youtubeUrls.map((url, i) => {
+                    const embedUrl = getYouTubeEmbedUrl(url)
+                    if (embedUrl) {
+                      return (
+                        <div key={i} className="rounded-lg overflow-hidden bg-black">
+                          <iframe
+                            src={embedUrl}
+                            width="100%"
+                            height="315"
+                            frameBorder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                            loading="lazy"
+                          />
+                        </div>
+                      )
+                    }
+                    return (
+                      <div key={i} className="flex items-center justify-between bg-gray-100 p-2 rounded">
+                        <a href={url} target="_blank" className="text-sm underline">
+                          Video {i + 1}
+                        </a>
+                        <button
+                          type="button"
+                          onClick={() => setYoutubeUrls(youtubeUrls.filter((_, idx) => idx !== i))}
+                          className="text-red-600 text-sm"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    )
+                  })}
                 </div>
               )}
             </div>
