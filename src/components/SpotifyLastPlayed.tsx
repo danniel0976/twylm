@@ -15,87 +15,36 @@ interface SpotifyTrack {
 export default function SpotifyLastPlayed() {
   const [track, setTrack] = useState<SpotifyTrack | null>(null)
   const [loading, setLoading] = useState(true)
-  const [needsAuth, setNeedsAuth] = useState(false)
-  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     fetchSpotifyTrack()
   }, [])
 
   const fetchSpotifyTrack = async () => {
-    const token = localStorage.getItem('spotify_access_token')
-    const expiry = localStorage.getItem('spotify_token_expiry')
-    const refreshToken = localStorage.getItem('spotify_refresh_token')
-    
-    // If token expired but we have refresh token, auto-refresh
-    if (expiry && Date.now() > parseInt(expiry) && refreshToken) {
-      await refreshAccessToken(refreshToken)
-      return // Will re-call this function after refresh
-    }
-    
-    if (!token) {
-      setNeedsAuth(true)
-      setLoading(false)
-      return
-    }
-    
     try {
-      // Get recently played
-      const response = await fetch('https://api.spotify.com/v1/me/player/recently-played?limit=1', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      })
+      // Fetch from server API (uses Dan's Supabase-stored tokens, not visitor's localStorage)
+      const response = await fetch('/api/spotify/track')
       
-      if (response.status === 401) {
-        setNeedsAuth(true)
+      if (!response.ok) {
         setLoading(false)
         return
       }
       
-      if (!response.ok) {
-        throw new Error('Failed to fetch')
-      }
-      
       const data = await response.json()
       
-      if (data.items && data.items.length > 0) {
-        const item = data.items[0]
+      if (data && data.song) {
         setTrack({
-          song: item.track.name,
-          artist: item.track.artists.map((a: any) => a.name).join(', '),
-          album: item.track.album.name,
-          image: item.track.album.images[0]?.url,
-          external_url: item.track.external_urls.spotify,
-          played_at: item.played_at,
-          is_playing: false,
+          song: data.song,
+          artist: data.artist,
+          album: data.album,
+          image: data.image,
+          external_url: data.external_url,
+          played_at: data.played_at || new Date().toISOString(),
+          is_playing: data.is_playing || false,
         })
-      } else {
-        // Try currently playing
-        const current = await fetch('https://api.spotify.com/v1/me/player/currently-playing', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        })
-        
-        if (current.ok && current.status !== 204) {
-          const currentData = await current.json()
-          if (currentData && currentData.item) {
-            setTrack({
-              song: currentData.item.name,
-              artist: currentData.item.artists.map((a: any) => a.name).join(', '),
-              album: currentData.item.album.name,
-              image: currentData.item.album.images[0]?.url,
-              external_url: currentData.item.external_urls.spotify,
-              played_at: new Date().toISOString(),
-              is_playing: true,
-            })
-          }
-        }
       }
     } catch (err) {
       console.error('Spotify fetch error:', err)
-      setError('Failed to load Spotify data')
     } finally {
       setLoading(false)
     }

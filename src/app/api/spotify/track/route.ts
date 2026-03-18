@@ -1,27 +1,52 @@
 import { NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
 
-const SPOTIFY_CLIENT_ID = process.env.SPOTIFY_CLIENT_ID
-const SPOTIFY_CLIENT_SECRET = process.env.SPITTER_CLIENT_SECRET
-const SPOTIFY_REDIRECT_URI = process.env.SPOTIFY_REDIRECT_URI || 'http://127.0.0.1:3000'
-
-const headers = {
-  Authorization: `Basic ${Buffer.from(`${SPOTIFY_CLIENT_ID}:${SPOTIFY_CLIENT_SECRET}`).toString('base64')}`,
-}
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
 export async function GET() {
   try {
-    const token = await getAccessToken()
+    // Fetch Dan's tokens from Supabase (server-side, not visitor's localStorage)
+    const { data: tokensData } = await supabase
+      .from('spotify_tokens')
+      .select('access_token, refresh_token, token_expiry')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single()
     
-    if (!token) {
+    if (!tokensData || !tokensData.access_token) {
       return NextResponse.json({ error: 'No Spotify token' }, { status: 401 })
     }
     
-    // Get recently played tracks
+    // Check if token expired, refresh if needed
+    const now = Date.now()
+    const expiry = tokensData.token_expiry ? new Date(tokensData.token_expiry).getTime() : 0
+    
+    if (expiry && now > expiry && tokensData.refresh_token) {
+      // Refresh token
+      const refreshed = await refreshSpotifyToken(tokensData.refresh_token)
+      if (refreshed) {
+        // Update Supabase with new tokens
+        await supabase
+          .from('spotify_tokens')
+          .upsert({
+            access_token: refreshed.access_token,
+            refresh_token: refreshed.refresh_token || tokensData.refresh_token,
+            token_expiry: new Date(Date.now() + refreshed.expires_in * 1000).toISOString(),
+            user_id: 'dan' // Dan's tokens
+          })
+        tokensData.access_token = refreshed.access_token
+      }
+    }
+    
+    // Get recently played tracks using Dan's token
     const recentlyPlayed = await fetch(
       'https://api.spotify.com/v1/me/player/recently-played?limit=1',
       {
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${tokensData.access_token}`,
         },
       }
     )
@@ -39,7 +64,6 @@ export async function GET() {
         artist: track.artists.map((a: any) => a.name).join(', '),
         album: track.album.name,
         image: track.album.images[0]?.url,
-        preview_url: track.preview_url,
         external_url: track.external_urls.spotify,
         played_at: data.items[0].played_at,
       })
@@ -50,21 +74,20 @@ export async function GET() {
       'https://api.spotify.com/v1/me/player/currently-playing',
       {
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${tokensData.access_token}`,
         },
       }
     )
     
     if (currentlyPlaying.ok && currentlyPlaying.status !== 204) {
-      const data = await currentlyPlaying.json()
-      if (data && data.item) {
+      const currentData = await currentlyPlaying.json()
+      if (currentData && currentData.item) {
         return NextResponse.json({
-          song: data.item.name,
-          artist: data.item.artists.map((a: any) => a.name).join(', '),
-          album: data.item.album.name,
-          image: data.item.album.images[0]?.url,
-          preview_url: data.item.preview_url,
-          external_url: data.item.external_urls.spotify,
+          song: currentData.item.name,
+          artist: currentData.item.artists.map((a: any) => a.name).join(', '),
+          album: currentData.item.album.name,
+          image: currentData.item.album.images[0]?.url,
+          external_url: currentData.item.external_urls.spotify,
           is_playing: true,
         })
       }
@@ -77,11 +100,34 @@ export async function GET() {
   }
 }
 
-async function getAccessToken() {
-  // Note: Client credentials flow doesn't support user endpoints
-  // For recently-played and currently-playing, need OAuth PKCE flow
-  // This requires user to authorize the app once
-  
-  // For now, return null - frontend will handle OAuth
-  return null
+async function refreshSpotifyToken(refreshToken: string) {
+  try {
+    const formData = new URLSearchParams()
+    formData.append('grant_type', 'refresh_token')
+    formData.append('refresh_token', refreshToken)
+    formData.append('client_id', process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID || '')
+    formData.append('client_secret', process.env.SPOTIFY_CLIENT_SECRET || '')
+
+    const response = await fetch('https://accounts.spotify.com/api/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: formData,
+    })
+
+    if (!response.ok) {
+      return null
+    }
+
+    const data = await response.json()
+    return {
+      access_token: data.access_token,
+      expires_in: data.expires_in,
+      refresh_token: data.refresh_token,
+    }
+  } catch (error) {
+    console.error('Token refresh error:', error)
+    return null
+  }
 }
