@@ -25,6 +25,11 @@ export default function SpotifyLastPlayed() {
       // Fetch from server API (uses Dan's Supabase-stored tokens, not visitor's localStorage)
       const response = await fetch('/api/spotify/track')
       
+      if (response.status === 401 || response.status === 500) {
+        setLoading(false)
+        return // No token configured or error - just hide widget
+      }
+      
       if (!response.ok) {
         setLoading(false)
         return

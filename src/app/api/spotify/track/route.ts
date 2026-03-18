@@ -1,14 +1,18 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
-
 export async function GET() {
   try {
     // Fetch Dan's tokens from Supabase (server-side, not visitor's localStorage)
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+    )
+    
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      return NextResponse.json({ error: 'Supabase not configured' }, { status: 500 })
+    }
+    
     const { data: tokensData } = await supabase
       .from('spotify_tokens')
       .select('access_token, refresh_token, token_expiry')
