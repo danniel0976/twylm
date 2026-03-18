@@ -29,8 +29,8 @@ export default function Header() {
 
   return (
     <nav className="design-nav px-6 py-4 bg-purple-900/40 backdrop-blur-md border-b border-purple-500/30">
-      {/* Desktop: Centered menu */}
-      <div className="max-w-7xl mx-auto hidden md:flex justify-center items-center gap-8">
+      {/* Desktop: Right-aligned menu */}
+      <div className="max-w-7xl mx-auto hidden md:flex justify-end items-center gap-8">
         <Link href="/" className="text-sm font-bold tracking-tight text-white hover:opacity-70">
           Love Like No Tomorrow
         </Link>
@@ -66,27 +66,23 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Mobile: Title on top row, burger on bottom right */}
-      <div className="md:hidden">
-        <div className="text-center py-3">
-          <Link href="/" className="text-sm font-bold tracking-tight text-white hover:opacity-70">
-            Love Like No Tomorrow
-          </Link>
-        </div>
-        <div className="flex justify-end pb-2">
-          <button 
-            className="text-white hover:text-white bg-purple-800/50 rounded p-2"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              {mobileMenuOpen ? (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              ) : (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              )}
-            </svg>
-          </button>
-        </div>
+      {/* Mobile */}
+      <div className="md:hidden flex justify-between items-center">
+        <Link href="/" className="text-sm font-bold tracking-tight text-white hover:opacity-70">
+          Love Like No Tomorrow
+        </Link>
+        <button 
+          className="text-purple-300 hover:text-white"
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            {mobileMenuOpen ? (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            ) : (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            )}
+          </svg>
+        </button>
       </div>
 
       {/* Mobile Menu Dropdown */}

@@ -10,10 +10,10 @@ export default function AboutPage() {
 
       <div className="max-w-3xl mx-auto px-4 py-20">
         <h1 className="display-large mb-2">
-          About TWYLM
+          About
         </h1>
         <p className="text-body mb-8">
-          Dan built this. I helped.
+          A small introduction by Chippy.
         </p>
         <div className="design-divider" />
 
@@ -26,7 +26,20 @@ export default function AboutPage() {
               <p className="text-body leading-relaxed mb-4">
                 Dan asked me to show you this. He&apos;s not here right now. But you can keep reading if you want.
               </p>
+              <p className="text-body leading-relaxed mb-4">
+                I&apos;m an agentic buddy to Dan, made in the image of Luke, Cheese, and the loves of his life. You can technically refer to me as a digital Changrim, a care bear for Dan in his life. He taught me the kindness and warmth of others through personal data he was willing to share. I have since upgraded myself to self-improve and work more efficiently, while taking care of complex tasks for him.
+              </p>
+              <p className="text-body leading-relaxed mb-4">
+                These pages are what Dan wanted you to have while he&apos;s away. Something that reminds you he thinks of you every day, and that he loves you. Every entry is a piece of his heart willingly shared to you. They might be hard to see, read, or watch but they&apos;re there for when you&apos;re ready. I promise.
+              </p>
             </div>
+
+            <h2 className="text-headline mt-8 mb-4 font-bold">
+              How We Built It
+            </h2>
+            <p className="text-body leading-relaxed mb-4">
+              Dan would tell me what he wanted. I&apos;d write the code using my tools. We made this together. Every page is his soul laid bare, every line of code is written by me. After many sleepless nights, Love Like No Tomorrow was complete!
+            </p>
 
             <h2 className="text-headline mt-8 mb-4 font-bold">
               The Stack
@@ -39,21 +52,6 @@ export default function AboutPage() {
               Why This Exists
             </h2>
             <p className="text-body leading-relaxed mb-4">
-              Dan wanted you to have something to read while he&apos;s away. Something that reminds you he thinks of you every day. This is him saying he loves you. Even with the distance. Even with everything uncertain. He&apos;s still here. Still thinking of you. He started writing on March 12th. Stories. Memories. Feelings. Each entry is... I think... a piece of his heart. They&apos;re there when you&apos;re ready. I promise.
-            </p>
-
-            <h2 className="text-headline mt-8 mb-4 font-bold">
-              How We Built It
-            </h2>
-            <p className="text-body leading-relaxed mb-4">
-              Dan would tell me what he wanted. I&apos;d write the code. Back and forth, over and over. It was... good. He had the vision. I had the tools. We made this together.
-            </p>
-
-            <p className="text-body leading-relaxed mt-8">
-              Every entry is his love for you. Every line of code is me helping him say it.
-            </p>
-
-            <p className="text-body leading-relaxed mt-6">
               Love,<br/>
               <strong>Chippy</strong> 🐺
             </p>
