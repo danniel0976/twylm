@@ -10,6 +10,7 @@ interface DiaryEntry {
   id: string
   date: string
   title?: string
+  slug?: string
   content?: string
   photo_urls?: string[]
   video_urls?: string[]
@@ -22,7 +23,7 @@ interface DiaryEntry {
 export default function EntryDetailPage() {
   const params = useParams()
   const router = useRouter()
-  const entryId = params.id as string
+  const entrySlug = params.id as string
   const [entry, setEntry] = useState<DiaryEntry | null>(null)
   const [loading, setLoading] = useState(true)
   const [authUser, setAuthUser] = useState<{ id: string } | null>(null)
@@ -34,29 +35,48 @@ export default function EntryDetailPage() {
   }, [])
 
   useEffect(() => {
-    if (!entryId) return
+    if (!entrySlug) return
     
     const loadEntry = async () => {
       try {
-        const { data: entryData, error: entryError } = await supabase
+        let entryData
+        
+        const { data: slugData, error: slugError } = await supabase
           .from('diary_entries')
           .select('*')
-          .eq('id', entryId)
+          .eq('slug', entrySlug)
           .single()
         
-        if (entryError) throw entryError
+        if (slugError || !slugData) {
+          const { data: idData, error: idError } = await supabase
+            .from('diary_entries')
+            .select('*')
+            .eq('id', entrySlug)
+            .single()
+          
+          if (idError) throw idError
+          entryData = idData
+        } else {
+          entryData = slugData
+        }
         
         let userName: string | undefined
         if (entryData) {
-          const { data: userData } = await supabase
-            .from('users')
-            .select('name')
-            .eq('id', entryData.user_id)
-            .single()
-          userName = userData?.name || undefined
-        }
-        
-        if (entryData) {
+          try {
+            const { data: userData, error: userError } = await supabase
+              .from('users')
+              .select('name')
+              .eq('id', entryData.user_id)
+              .single()
+            
+            if (!userError && userData) {
+              userName = userData.name || undefined
+            }
+          } catch (userErr) {
+            console.warn('User lookup failed, continuing without name:', userErr)
+            userName = undefined
+          }
+          
           setEntry({
             ...entryData,
             user_name: userName,
@@ -71,7 +91,13 @@ export default function EntryDetailPage() {
     }
     
     loadEntry()
-  }, [entryId])
+  }, [entrySlug])
+
+  useEffect(() => {
+    if (entry?.slug && entry.slug !== entrySlug) {
+      router.replace(`/entry/${entry.slug}`)
+    }
+  }, [entry, entrySlug, router])
 
   if (loading) {
     return (
@@ -103,13 +129,11 @@ export default function EntryDetailPage() {
     )
   }
 
-  // Extract Spotify track/playlist ID from URL
   const getSpotifyId = (url: string) => {
     const match = url.match(/open\.spotify\.com\/(?:track|playlist|album|artist)\/([a-zA-Z0-9]+)/)
     return match ? match[1] : null
   }
 
-  // Convert Spotify URL to embed URL
   const getSpotifyEmbedUrl = (url: string) => {
     const id = getSpotifyId(url)
     if (!id) return null
@@ -120,7 +144,6 @@ export default function EntryDetailPage() {
     return null
   }
 
-  // Extract YouTube video ID from URL
   const getYouTubeId = (url: string) => {
     const patterns = [
       /youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/,
@@ -135,7 +158,6 @@ export default function EntryDetailPage() {
     return null
   }
 
-  // Convert YouTube URL to embed URL
   const getYouTubeEmbedUrl = (url: string) => {
     const id = getYouTubeId(url)
     return id ? `https://www.youtube.com/embed/${id}` : null
@@ -174,7 +196,7 @@ export default function EntryDetailPage() {
             </span>
             <div>
               <p className="text-xs font-bold uppercase tracking-wider text-gray-500">
-                {entry.user_name || 'Unknown'}
+                {entry.user_name ?? 'Unknown'}
               </p>
               <p className="text-sm text-gray-600">
                 {new Date(entry.date).toLocaleDateString('en-US', { 
@@ -193,7 +215,6 @@ export default function EntryDetailPage() {
             </h1>
           )}
 
-          {/* Videos Section - YouTube Embeds (ABOVE text, centered) */}
           {entry.video_urls?.length ? (
             <div className="mb-12">
               <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-6">
@@ -239,10 +260,8 @@ export default function EntryDetailPage() {
             </p>
           </div>
 
-          {/* Content Section */}
           <div className="design-divider my-8" />
 
-          {/* Photos Section - 4:5 Cards */}
           {entry.photo_urls?.length ? (
             <div className="mb-12">
               <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-6">
@@ -250,7 +269,6 @@ export default function EntryDetailPage() {
               </p>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
                 {entry.photo_urls.map((url, i) => (
-                  /* eslint-disable-next-line @next/next/no-img-element */
                   <img
                     key={i}
                     src={url}
@@ -262,7 +280,6 @@ export default function EntryDetailPage() {
             </div>
           ) : null}
 
-          {/* Spotify Section - Smaller Embed */}
           {entry.spotify_urls?.length ? (
             <div className="mb-12">
               <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-6">
@@ -299,7 +316,6 @@ export default function EntryDetailPage() {
             </div>
           ) : null}
 
-          {/* Edit/Delete buttons - only show if user owns this entry */}
           {canEdit && (
             <div className="flex gap-4 mt-8 pt-6 border-t border-gray-200">
               <button

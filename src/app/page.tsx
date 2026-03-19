@@ -11,6 +11,7 @@ interface DiaryEntry {
   id: string
   date: string
   title?: string
+  slug?: string
   content?: string
   photo_urls?: string[]
   video_urls?: string[]

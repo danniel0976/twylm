@@ -7,6 +7,7 @@ interface DiaryEntry {
   id: string
   date: string
   title?: string
+  slug?: string
   content?: string
   photo_urls?: string[]
   video_urls?: string[]
@@ -113,7 +114,7 @@ export default function Calendar({ selectedDate, entries, onDateSelect }: Calend
         onMouseLeave={handleMouseLeave}
       >
         <Link
-          href={has ? `/entry/${entry.id}` : '#'}
+          href={has ? `/entry/${entry.slug || entry.id}` : '#'}
           onClick={(e) => {
             if (!has) e.preventDefault()
             else onDateSelect(date)
@@ -222,7 +223,7 @@ export default function Calendar({ selectedDate, entries, onDateSelect }: Calend
             
             <div className="mt-4 pt-3 border-t border-gray-200">
               <Link
-                href={`/entry/${entry.id}`}
+                href={`/entry/${entry.slug || entry.id}`}
                 className="block text-center text-sm font-bold uppercase tracking-wider bg-black text-white px-4 py-2 rounded hover:bg-gray-800 mb-2"
               >
                 View {entry.user_name || 'Entry'}'s Entry
@@ -230,7 +231,7 @@ export default function Calendar({ selectedDate, entries, onDateSelect }: Calend
               {/* If Luke also has an entry for this date, show link to it */}
               {lukeEntry && (
                 <Link
-                  href={`/entry/${lukeEntry.id}`}
+                  href={`/entry/${lukeEntry.slug || lukeEntry.id}`}
                   className="block text-center text-sm font-bold uppercase tracking-wider bg-purple-900 text-white px-4 py-2 rounded hover:bg-purple-800"
                 >
                   View Luke's Entry 💜

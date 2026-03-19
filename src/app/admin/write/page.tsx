@@ -68,6 +68,16 @@ export default function AdminPage() {
     }
   }
 
+  // Generate slug from title (e.g., "The Way You Sound" → "the-way-you-sound")
+  const generateSlug = (title: string): string => {
+    return title
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, '')
+      .trim()
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+  }
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
     await handleSaveWithStatus(status)
@@ -89,6 +99,9 @@ export default function AdminPage() {
       // Combine video files and YouTube URLs into single array for DB
       const allVideoUrls = [...videoFileUrls, ...youtubeUrls]
       
+      // Generate slug from title
+      const slug = title ? generateSlug(title) : null
+      
       if (editingId) {
         // Update existing entry by ID
         const result = await supabase
@@ -96,6 +109,7 @@ export default function AdminPage() {
           .update({
             date,
             title,
+            slug,
             content,
             photo_urls: photoUrls,
             video_urls: allVideoUrls,
@@ -116,6 +130,7 @@ export default function AdminPage() {
             user_id: authUser.id,
             date,
             title,
+            slug,
             content,
             photo_urls: photoUrls,
             video_urls: allVideoUrls,
