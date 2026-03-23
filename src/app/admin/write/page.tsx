@@ -132,6 +132,16 @@ export default function AdminPage() {
       const slug = title ? generateSlug(title) : null
       
       if (editingId) {
+        // First, unset featured on all other entries for this date
+        if (featured) {
+          await supabase
+            .from('diary_entries')
+            .update({ featured: false })
+            .eq('user_id', authUser.id)
+            .eq('date', date)
+            .neq('id', editingId)
+        }
+        
         const result = await supabase
           .from('diary_entries')
           .update({
@@ -153,6 +163,15 @@ export default function AdminPage() {
         data = result.data
         error = result.error
       } else {
+        // For new entries, first unset featured on others if this one should be featured
+        if (featured) {
+          await supabase
+            .from('diary_entries')
+            .update({ featured: false })
+            .eq('user_id', authUser.id)
+            .eq('date', date)
+        }
+        
         const result = await supabase
           .from('diary_entries')
           .upsert({
@@ -179,7 +198,10 @@ export default function AdminPage() {
         }
       }
 
-      if (error) throw error
+      if (error) {
+        console.error('Save error:', error)
+        throw error
+      }
 
       setMessage(saveStatus === 'draft' ? 'Draft saved! 💙' : 'Entry published! 💜')
       

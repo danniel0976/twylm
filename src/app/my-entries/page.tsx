@@ -122,6 +122,19 @@ export default function MyEntriesPage() {
     if (!editingId) return
     
     try {
+      // First, unset featured on all other entries for this date if this one should be featured
+      if (editFeatured) {
+        const entryDate = entries.find(e => e.id === editingId)?.date
+        if (entryDate) {
+          await supabase
+            .from('diary_entries')
+            .update({ featured: false })
+            .eq('user_id', authUser!.id)
+            .eq('date', entryDate)
+            .neq('id', editingId)
+        }
+      }
+      
       const { error } = await supabase
         .from('diary_entries')
         .update({ 
@@ -151,6 +164,7 @@ export default function MyEntriesPage() {
       setEditingId(null)
     } catch (err) {
       console.error('Failed to update:', err)
+      alert('Failed to save: ' + (err as Error).message)
     }
   }
 
