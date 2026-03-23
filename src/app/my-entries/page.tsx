@@ -16,6 +16,7 @@ interface DiaryEntry {
   spotify_urls?: string[]
   status?: 'draft' | 'published'
   unlisted?: boolean
+  featured?: boolean
   created_at: string
 }
 
@@ -33,6 +34,8 @@ export default function MyEntriesPage() {
   const [editVideoUrls, setEditVideoUrls] = useState<string[]>([])
   const [editSpotifyUrls, setEditSpotifyUrls] = useState<string[]>([])
   const [editStatus, setEditStatus] = useState<'draft' | 'published'>('draft')
+  const [editUnlisted, setEditUnlisted] = useState(false)
+  const [editFeatured, setEditFeatured] = useState(false)
   const [uploading, setUploading] = useState(false)
   const photoInputRef = useRef<HTMLInputElement>(null)
   const videoInputRef = useRef<HTMLInputElement>(null)
@@ -82,12 +85,36 @@ export default function MyEntriesPage() {
   }
 
   const handleEdit = (entry: DiaryEntry) => {
-    // Redirect to edit form with entry ID
-    router.push(`/admin/write?edit=${entry.id}`)
+    setEditingId(entry.id)
+    setEditTitle(entry.title || '')
+    setEditContent(entry.content || '')
+    setEditPhotoUrls(entry.photo_urls || [])
+    setEditVideoUrls(entry.video_urls || [])
+    setEditSpotifyUrls(entry.spotify_urls || [])
+    setEditStatus(entry.status || 'draft')
+    setEditUnlisted(entry.unlisted || false)
+    setEditFeatured(entry.featured || false)
+    loadEntriesForDate(entry.date)
+  }
+
+  const loadEntriesForDate = async (selectedDate: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('diary_entries')
+        .select('id, title, status, featured')
+        .eq('user_id', authUser!.id)
+        .eq('date', selectedDate)
+        .order('created_at', { ascending: true })
+      
+      if (error) throw error
+      ;(window as any).__entriesForDate = data || []
+    } catch (err) {
+      console.error('Failed to load entries for date:', err)
+    }
   }
 
   const handlePreview = (entry: DiaryEntry) => {
-    setEditingId(null) // Close edit modal first
+    setEditingId(null)
     setPreviewEntry(entry)
   }
 
@@ -104,6 +131,8 @@ export default function MyEntriesPage() {
           video_urls: editVideoUrls,
           spotify_urls: editSpotifyUrls,
           status: editStatus,
+          unlisted: editUnlisted,
+          featured: editFeatured,
         })
         .eq('id', editingId)
       
@@ -116,6 +145,8 @@ export default function MyEntriesPage() {
         video_urls: editVideoUrls,
         spotify_urls: editSpotifyUrls,
         status: editStatus,
+        unlisted: editUnlisted,
+        featured: editFeatured,
       } : e))
       setEditingId(null)
     } catch (err) {
@@ -218,19 +249,14 @@ export default function MyEntriesPage() {
       <div className="max-w-4xl mx-auto py-12 px-4">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="display-large mb-2">
-              My Entries
-            </h1>
-            <p className="text-body">
-              {authUser.email}
-            </p>
+            <h1 className="display-large mb-2">My Entries</h1>
+            <p className="text-body">{authUser.email}</p>
           </div>
           <Link href="/admin/write" className="design-button px-6 py-3">
             New Entry
           </Link>
         </div>
         
-        {/* Tabs - Compact */}
         <div className="flex gap-2 mb-6">
           <button
             onClick={() => setActiveTab('all')}
@@ -282,9 +308,7 @@ export default function MyEntriesPage() {
                 className="design-card rounded-none p-4 flex items-center justify-between"
               >
                 <div className="flex items-center gap-4 flex-1">
-                  {/* Thumbnail or placeholder */}
                   {entry.photo_urls?.length ? (
-                    /* eslint-disable-next-line @next/next/no-img-element */
                     <img
                       src={entry.photo_urls[0]}
                       alt=""
@@ -308,6 +332,11 @@ export default function MyEntriesPage() {
                           Unlisted
                         </span>
                       )}
+                      {entry.featured && (
+                        <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-yellow-100 text-yellow-800">
+                          🌟 Featured
+                        </span>
+                      )}
                       <span className="text-xs text-gray-500">
                         {new Date(entry.date).toLocaleDateString('en-US', { 
                           month: 'short', 
@@ -317,24 +346,16 @@ export default function MyEntriesPage() {
                       </span>
                     </div>
                     {entry.title ? (
-                      <h3 className="text-sm font-bold truncate">
-                        {entry.title}
-                      </h3>
+                      <h3 className="text-sm font-bold truncate">{entry.title}</h3>
                     ) : (
                       <p className="text-sm text-gray-500 truncate">
                         {entry.content?.slice(0, 50) || 'Untitled'}...
                       </p>
                     )}
                     <div className="flex gap-3 mt-1 text-xs text-gray-500">
-                      {entry.photo_urls?.length ? (
-                        <span>📸 {entry.photo_urls.length}</span>
-                      ) : null}
-                      {entry.video_urls?.length ? (
-                        <span>🎥 {entry.video_urls.length}</span>
-                      ) : null}
-                      {entry.spotify_urls?.length ? (
-                        <span>🎵 {entry.spotify_urls.length}</span>
-                      ) : null}
+                      {entry.photo_urls?.length ? (<span>📸 {entry.photo_urls.length}</span>) : null}
+                      {entry.video_urls?.length ? (<span>🎥 {entry.video_urls.length}</span>) : null}
+                      {entry.spotify_urls?.length ? (<span>🎵 {entry.spotify_urls.length}</span>) : null}
                     </div>
                   </div>
                 </div>
@@ -343,18 +364,16 @@ export default function MyEntriesPage() {
                   {entry.status === 'published' ? (
                     <>
                       <button
-                        onClick={() => {
-                          window.open(`/entry/${entry.id}`, '_blank')
-                        }}
+                        onClick={() => window.open(`/entry/${entry.id}`, '_blank')}
                         className="text-xs font-bold uppercase tracking-wider hover:text-black"
                       >
-                        View Entry
+                        View
                       </button>
                       <button
                         onClick={() => {
                           const url = `${window.location.origin}/entry/${entry.id}`
                           navigator.clipboard.writeText(url)
-                          alert('Link copied to clipboard!')
+                          alert('Link copied!')
                         }}
                         className="text-xs font-bold uppercase tracking-wider text-purple-700 hover:text-purple-800"
                       >
@@ -387,354 +406,166 @@ export default function MyEntriesPage() {
           </div>
         )}
 
-        {/* Preview Modal - Instance Preview (not published page) */}
         {previewEntry && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-lg p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
               <h2 className="display-large mb-4">Preview</h2>
-              
               <div className="design-card rounded-none p-6 space-y-6">
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">
-                    Date
-                  </p>
-                  <p className="text-body">
-                    {new Date(previewEntry.date).toLocaleDateString('en-US', { 
-                      weekday: 'long', 
-                      year: 'numeric', 
-                      month: 'long', 
-                      day: 'numeric' 
-                    })}
-                  </p>
+                  <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Date</p>
+                  <p className="text-body">{new Date(previewEntry.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
                 </div>
-                
                 {previewEntry.title && (
                   <div>
-                    <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">
-                      Title
-                    </p>
+                    <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Title</p>
                     <h3 className="text-headline">{previewEntry.title}</h3>
                   </div>
                 )}
-                
                 {previewEntry.content && (
                   <div>
-                    <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">
-                      Content
-                    </p>
+                    <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Content</p>
                     <p className="text-body whitespace-pre-wrap">{previewEntry.content}</p>
                   </div>
                 )}
-                
                 {previewEntry.photo_urls?.length ? (
                   <div>
-                    <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-3">
-                      📸 Photos ({previewEntry.photo_urls.length})
-                    </p>
+                    <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-3">📸 Photos ({previewEntry.photo_urls.length})</p>
                     <div className="grid grid-cols-2 gap-4">
                       {previewEntry.photo_urls.map((url, i) => (
-                        /* eslint-disable-next-line @next/next/no-img-element */
-                        <img
-                          key={i}
-                          src={url}
-                          alt=""
-                          className="w-full aspect-[4/5] object-cover rounded-lg"
-                        />
+                        <img key={i} src={url} alt="" className="w-full aspect-[4/5] object-cover rounded-lg" />
                       ))}
                     </div>
                   </div>
                 ) : null}
-                
                 {previewEntry.spotify_urls?.length ? (
                   <div>
-                    <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-3">
-                      🎵 Songs ({previewEntry.spotify_urls.length})
-                    </p>
+                    <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-3">🎵 Songs ({previewEntry.spotify_urls.length})</p>
                     <div className="space-y-4">
                       {previewEntry.spotify_urls.map((url, i) => {
                         const embedUrl = getSpotifyEmbedUrl(url)
                         if (embedUrl) {
                           return (
-                            <iframe
-                              key={i}
-                              src={embedUrl}
-                              width="100%"
-                              height="152"
-                              frameBorder="0"
-                              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-                              loading="lazy"
-                              className="rounded-lg"
-                            />
+                            <iframe key={i} src={embedUrl} width="100%" height="152" frameBorder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" className="rounded-lg" />
                           )
                         }
-                        return (
-                          <a
-                            key={i}
-                            href={url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-body underline"
-                          >
-                            Song {i + 1}
-                          </a>
-                        )
+                        return (<a key={i} href={url} target="_blank" rel="noopener noreferrer" className="text-body underline">Song {i + 1}</a>)
                       })}
                     </div>
                   </div>
                 ) : null}
-                
-                {previewEntry.video_urls?.length ? (
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-3">
-                      🎥 Videos ({previewEntry.video_urls.length})
-                    </p>
-                    <div className="space-y-2">
-                      {previewEntry.video_urls.map((url, i) => (
-                        <a
-                          key={i}
-                          href={url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-body underline"
-                        >
-                          Video {i + 1}
-                        </a>
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
               </div>
-              
               <div className="flex gap-4 mt-6">
-                <button
-                  onClick={() => setPreviewEntry(null)}
-                  className="flex-1 bg-gray-200 text-gray-700 px-6 py-3 rounded font-bold uppercase tracking-wider hover:bg-gray-300"
-                >
-                  Close
-                </button>
-                <button
-                  onClick={() => {
-                    setPreviewEntry(null)
-                    handleEdit(previewEntry)
-                  }}
-                  className="flex-1 design-button"
-                >
-                  Edit This
-                </button>
+                <button onClick={() => setPreviewEntry(null)} className="flex-1 bg-gray-200 text-gray-700 px-6 py-3 rounded font-bold uppercase tracking-wider hover:bg-gray-300">Close</button>
+                <button onClick={() => { setPreviewEntry(null); handleEdit(previewEntry) }} className="flex-1 design-button">Edit This</button>
               </div>
             </div>
           </div>
         )}
 
-        {/* Edit Modal */}
         {editingId && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
               <h2 className="text-headline mb-4">Edit Entry</h2>
-              
               <div className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">
-                    Title
-                  </label>
-                  <input
-                    type="text"
-                    value={editTitle}
-                    onChange={(e) => setEditTitle(e.target.value)}
-                    className="w-full design-input"
-                    placeholder="Entry title"
-                  />
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Title</label>
+                  <input type="text" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className="w-full design-input" placeholder="Entry title" />
                 </div>
-                
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">
-                    Content
-                  </label>
-                  <textarea
-                    value={editContent}
-                    onChange={(e) => setEditContent(e.target.value)}
-                    className="w-full design-input min-h-[150px]"
-                    placeholder="Write your entry..."
-                  />
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Content</label>
+                  <textarea value={editContent} onChange={(e) => setEditContent(e.target.value)} className="w-full design-input min-h-[150px]" placeholder="Write your entry..." />
                 </div>
-                
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">
-                    Status
-                  </label>
-                  <select
-                    value={editStatus}
-                    onChange={(e) => setEditStatus(e.target.value as 'draft' | 'published')}
-                    className="w-full design-input"
-                  >
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Status</label>
+                  <select value={editStatus} onChange={(e) => setEditStatus(e.target.value as 'draft' | 'published')} className="w-full design-input">
                     <option value="draft">Draft</option>
                     <option value="published">Published</option>
                   </select>
                 </div>
-                
-                {/* Photo upload */}
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">
-                    Photos ({editPhotoUrls.length})
-                  </label>
-                  <input
-                    ref={photoInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handlePhotoUpload}
-                    disabled={uploading}
-                    className="w-full text-sm"
-                  />
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Visibility</label>
+                  <select value={editUnlisted ? 'unlisted' : 'listed'} onChange={(e) => setEditUnlisted(e.target.value === 'unlisted')} className="w-full design-input">
+                    <option value="listed">Listed (shows on calendar if featured)</option>
+                    <option value="unlisted">Unlisted (hidden from calendar, direct link works)</option>
+                  </select>
+                </div>
+                {(window as any).__entriesForDate?.length > 0 && (
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">🌟 Featured Entry</label>
+                    <div className="p-3 bg-gray-50 rounded">
+                      <p className="text-xs text-gray-600 mb-2">{(window as any).__entriesForDate.length} entr{(window as any).__entriesForDate.length === 1 ? 'y' : 'ies'} for this date.</p>
+                      <div className="space-y-2">
+                        {(window as any).__entriesForDate.map((entry: {id: string, title?: string, status: string, featured: boolean}) => (
+                          <label key={entry.id} className="flex items-center gap-3 p-2 rounded hover:bg-white cursor-pointer">
+                            <input type="radio" name="edit-featured" value={entry.id} checked={entry.id === editingId ? editFeatured : false} onChange={async () => {
+                              if (entry.id === editingId) { setEditFeatured(true) }
+                              await supabase.from('diary_entries').update({ featured: false }).eq('user_id', authUser!.id).eq('date', entries.find(e => e.id === editingId)?.date || '').neq('id', entry.id)
+                            }} className="w-4 h-4" />
+                            <span className="text-sm">{entry.title || `Entry`} <span className="text-xs text-gray-500 ml-2">({entry.status})</span></span>
+                            {entry.featured && entry.id !== editingId && (<span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded">Currently Featured</span>)}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div className="p-3 bg-blue-50 text-blue-800 text-xs rounded">
+                  <p className="font-bold mb-1">📌 Featured Rules:</p>
+                  <ul className="list-disc list-inside space-y-1">
+                    <li>Only <strong>published</strong> entries can be featured</li>
+                    <li>Unlisted entries won't show on calendar even if featured</li>
+                    <li>Only ONE entry per date can be featured</li>
+                  </ul>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Photos ({editPhotoUrls.length})</label>
+                  <input ref={photoInputRef} type="file" accept="image/*" onChange={handlePhotoUpload} disabled={uploading} className="w-full text-sm" />
                   {editPhotoUrls.length > 0 && (
                     <div className="grid grid-cols-3 gap-2 mt-2">
                       {editPhotoUrls.map((url, i) => (
-                        /* eslint-disable-next-line @next/next/no-img-element */
                         <div key={i} className="relative aspect-square">
                           <img src={url} alt="" className="w-full h-full object-cover rounded" />
-                          <button
-                            onClick={() => setEditPhotoUrls(editPhotoUrls.filter((_, idx) => idx !== i))}
-                            className="absolute top-1 right-1 bg-red-600 text-white rounded-full w-5 h-5 text-xs"
-                          >
-                            ×
-                          </button>
+                          <button onClick={() => setEditPhotoUrls(editPhotoUrls.filter((_, idx) => idx !== i))} className="absolute top-1 right-1 bg-red-600 text-white rounded-full w-5 h-5 text-xs">×</button>
                         </div>
                       ))}
                     </div>
                   )}
                 </div>
-                
-                {/* Video upload */}
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">
-                    Videos ({editVideoUrls.length})
-                  </label>
-                  <input
-                    ref={videoInputRef}
-                    type="file"
-                    accept="video/*"
-                    onChange={handleVideoUpload}
-                    disabled={uploading}
-                    className="w-full text-sm"
-                  />
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Videos ({editVideoUrls.length})</label>
+                  <input ref={videoInputRef} type="file" accept="video/*" onChange={handleVideoUpload} disabled={uploading} className="w-full text-sm" />
                   {editVideoUrls.length > 0 && (
                     <div className="space-y-2 mt-2">
                       {editVideoUrls.map((url, i) => (
                         <div key={i} className="flex items-center justify-between bg-gray-100 p-2 rounded">
-                          <a href={url} target="_blank" className="text-sm underline">
-                            Video {i + 1}
-                          </a>
-                          <button
-                            onClick={() => setEditVideoUrls(editVideoUrls.filter((_, idx) => idx !== i))}
-                            className="text-red-600 text-sm"
-                          >
-                            Remove
-                          </button>
+                          <a href={url} target="_blank" className="text-sm underline">Video {i + 1}</a>
+                          <button onClick={() => setEditVideoUrls(editVideoUrls.filter((_, idx) => idx !== i))} className="text-red-600 text-sm">Remove</button>
                         </div>
                       ))}
                     </div>
                   )}
                 </div>
-                
-                {/* Spotify URLs */}
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">
-                    Spotify URLs ({editSpotifyUrls.length})
-                  </label>
-                  <input
-                    type="text"
-                    value={editSpotifyUrls.join(',')}
-                    onChange={(e) => setEditSpotifyUrls(e.target.value.split(',').filter(url => url.trim()))}
-                    className="w-full design-input"
-                    placeholder="Paste Spotify track/album URLs separated by commas"
-                  />
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Spotify URLs ({editSpotifyUrls.length})</label>
+                  <input type="text" value={editSpotifyUrls.join(',')} onChange={(e) => setEditSpotifyUrls(e.target.value.split(',').filter(url => url.trim()))} className="w-full design-input" placeholder="Paste Spotify track/album URLs separated by commas" />
                   {editSpotifyUrls.length > 0 && (
                     <div className="space-y-3 mt-3">
                       {editSpotifyUrls.map((url, i) => {
                         const embedUrl = getSpotifyEmbedUrl(url)
                         if (embedUrl) {
-                          return (
-                            <div key={i} className="rounded-lg overflow-hidden bg-black">
-                              <iframe
-                                src={embedUrl}
-                                width="100%"
-                                height="152"
-                                frameBorder="0"
-                                allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-                                loading="lazy"
-                              />
-                            </div>
-                          )
+                          return (<div key={i} className="rounded-lg overflow-hidden bg-black"><iframe src={embedUrl} width="100%" height="152" frameBorder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" /></div>)
                         }
-                        return (
-                          <div key={i} className="flex items-center justify-between bg-gray-100 p-2 rounded">
-                            <a href={url} target="_blank" className="text-sm underline">
-                              Song {i + 1}
-                            </a>
-                            <button
-                              onClick={() => setEditSpotifyUrls(editSpotifyUrls.filter((_, idx) => idx !== i))}
-                              className="text-red-600 text-sm"
-                            >
-                              Remove
-                            </button>
-                          </div>
-                        )
+                        return (<div key={i} className="flex items-center justify-between bg-gray-100 p-2 rounded"><a href={url} target="_blank" className="text-sm underline">Song {i + 1}</a><button onClick={() => setEditSpotifyUrls(editSpotifyUrls.filter((_, idx) => idx !== i))} className="text-red-600 text-sm">Remove</button></div>)
                       })}
                     </div>
                   )}
                 </div>
               </div>
-              
               <div className="flex gap-3 mt-6">
-                <button
-                  onClick={() => setEditingId(null)}
-                  className="bg-gray-200 text-gray-700 px-4 py-3 rounded font-bold uppercase tracking-wider hover:bg-gray-300 text-sm"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditingId(null) // Close edit modal first
-                    setPreviewEntry({
-                      id: editingId,
-                      date: editTitle ? editTitle : entries.find(e => e.id === editingId)?.date || '',
-                      title: editTitle,
-                      content: editContent,
-                      photo_urls: editPhotoUrls,
-                      video_urls: editVideoUrls,
-                      spotify_urls: editSpotifyUrls,
-                      status: editStatus,
-                      created_at: entries.find(e => e.id === editingId)?.created_at || '',
-                    })
-                  }}
-                  disabled={uploading}
-                  className="bg-gray-800 text-white px-4 py-3 rounded font-bold uppercase tracking-wider hover:bg-gray-900 text-sm"
-                >
-                  Preview
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditStatus('draft')
-                    handleSaveEdit()
-                  }}
-                  disabled={uploading}
-                  className="bg-gray-200 text-gray-700 px-4 py-3 rounded font-bold uppercase tracking-wider hover:bg-gray-300 text-sm"
-                  title="Unpublish - hides from calendar"
-                >
-                  Unpublish
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditStatus('published')
-                    handleSaveEdit()
-                  }}
-                  disabled={uploading}
-                  className="flex-1 design-button disabled:opacity-50 text-sm"
-                >
-                  {uploading ? 'Publishing...' : 'Publish'}
-                </button>
+                <button onClick={() => setEditingId(null)} className="bg-gray-200 text-gray-700 px-4 py-3 rounded font-bold uppercase tracking-wider hover:bg-gray-300 text-sm">Cancel</button>
+                <button type="button" onClick={() => { setEditingId(null); setPreviewEntry({ id: editingId, date: editTitle ? editTitle : entries.find(e => e.id === editingId)?.date || '', title: editTitle, content: editContent, photo_urls: editPhotoUrls, video_urls: editVideoUrls, spotify_urls: editSpotifyUrls, status: editStatus, created_at: entries.find(e => e.id === editingId)?.created_at || '' }) }} disabled={uploading} className="bg-gray-800 text-white px-4 py-3 rounded font-bold uppercase tracking-wider hover:bg-gray-900 text-sm">Preview</button>
+                <button type="button" onClick={() => { setEditStatus('draft'); handleSaveEdit() }} disabled={uploading} className="bg-gray-200 text-gray-700 px-4 py-3 rounded font-bold uppercase tracking-wider hover:bg-gray-300 text-sm">Unpublish</button>
+                <button type="button" onClick={() => { setEditStatus('published'); handleSaveEdit() }} disabled={uploading} className="flex-1 design-button disabled:opacity-50 text-sm">{uploading ? 'Publishing...' : 'Publish'}</button>
               </div>
             </div>
           </div>

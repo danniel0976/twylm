@@ -18,6 +18,8 @@ export default function AdminPage() {
   const [spotifyUrls, setSpotifyUrls] = useState<string[]>([])
   const [status, setStatus] = useState<'draft' | 'published'>('draft')
   const [unlisted, setUnlisted] = useState(false)
+  const [featured, setFeatured] = useState(false)
+  const [entriesForDate, setEntriesForDate] = useState<Array<{id: string, title?: string, status: string, featured: boolean}>>([])
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
@@ -33,16 +35,45 @@ export default function AdminPage() {
       }
       setAuthUser(user)
       
-      // Check if editing existing entry
       const urlParams = new URLSearchParams(window.location.search)
       const editId = urlParams.get('edit')
       if (editId) {
         setEditingId(editId)
         loadEntryForEdit(editId)
       }
-      // If no editId, it's a new entry (keep form blank)
     })
   }, [router])
+
+  useEffect(() => {
+    if (authUser && date) {
+      loadEntriesForDate(date)
+    }
+  }, [date, authUser])
+
+  const loadEntriesForDate = async (selectedDate: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('diary_entries')
+        .select('id, title, status, featured')
+        .eq('user_id', authUser!.id)
+        .eq('date', selectedDate)
+        .order('created_at', { ascending: true })
+      
+      if (error) throw error
+      setEntriesForDate(data || [])
+      
+      if (editingId) {
+        const currentEntry = data?.find(e => e.id === editingId)
+        setFeatured(currentEntry?.featured || false)
+      } else if (data && data.length > 0) {
+        setFeatured(false)
+      } else {
+        setFeatured(true)
+      }
+    } catch (err) {
+      console.error('Failed to load entries for date:', err)
+    }
+  }
 
   const loadEntryForEdit = async (entryId: string) => {
     try {
@@ -64,13 +95,13 @@ export default function AdminPage() {
         setSpotifyUrls(data.spotify_urls || [])
         setStatus(data.status || 'draft')
         setUnlisted(data.unlisted || false)
+        setFeatured(data.featured || false)
       }
     } catch (err) {
       console.error('Failed to load entry for edit:', err)
     }
   }
 
-  // Generate slug from title (e.g., "The Way You Sound" → "the-way-you-sound")
   const generateSlug = (title: string): string => {
     return title
       .toLowerCase()
@@ -97,15 +128,10 @@ export default function AdminPage() {
 
     try {
       let data, error
-      
-      // Combine video files and YouTube URLs into single array for DB
       const allVideoUrls = [...videoFileUrls, ...youtubeUrls]
-      
-      // Generate slug from title
       const slug = title ? generateSlug(title) : null
       
       if (editingId) {
-        // Update existing entry by ID
         const result = await supabase
           .from('diary_entries')
           .update({
@@ -118,6 +144,7 @@ export default function AdminPage() {
             spotify_urls: spotifyUrls,
             status: saveStatus,
             unlisted,
+            featured,
           })
           .eq('id', editingId)
           .select()
@@ -126,7 +153,6 @@ export default function AdminPage() {
         data = result.data
         error = result.error
       } else {
-        // Create new entry (upsert by user_id + date)
         const result = await supabase
           .from('diary_entries')
           .upsert({
@@ -140,6 +166,7 @@ export default function AdminPage() {
             spotify_urls: spotifyUrls,
             status: saveStatus,
             unlisted,
+            featured,
           })
           .select()
           .single()
@@ -147,7 +174,6 @@ export default function AdminPage() {
         data = result.data
         error = result.error
         
-        // Set editing ID for new entry
         if (data) {
           setEditingId(data.id)
         }
@@ -157,7 +183,6 @@ export default function AdminPage() {
 
       setMessage(saveStatus === 'draft' ? 'Draft saved! 💙' : 'Entry published! 💜')
       
-      // Redirect to my-entries after publishing
       if (saveStatus === 'published') {
         setTimeout(() => {
           router.push('/my-entries')
@@ -237,7 +262,7 @@ export default function AdminPage() {
         .from('diary-videos')
         .getPublicUrl(fileName)
       
-      setVideoUrls([...videoUrls, publicUrl])
+      setVideoFileUrls([...videoFileUrls, publicUrl])
       setMessage('✅ Video uploaded!')
     } catch (err) {
       setMessage(`❌ Failed: ${(err as Error).message}`)
@@ -252,7 +277,7 @@ export default function AdminPage() {
   }
 
   const removeVideo = (i: number) => {
-    setVideoUrls(videoUrls.filter((_, idx) => idx !== i))
+    setVideoFileUrls(videoFileUrls.filter((_, idx) => idx !== i))
   }
 
   const getSpotifyEmbedUrl = (url: string) => {
@@ -337,6 +362,91 @@ export default function AdminPage() {
               />
             </div>
 
+            {entriesForDate.length > 0 && (
+              <div>
+                <label className="block text-sm font-bold uppercase tracking-wider mb-2">
+                  🌟 Featured Entry
+                </label>
+                <div className="design-card rounded-none p-4 bg-gray-50">
+                  <p className="text-xs text-gray-600 mb-3">
+                    {entriesForDate.length} entr{entriesForDate.length === 1 ? 'y' : 'ies'} for this date. Only one can be featured.
+                  </p>
+                  <div className="space-y-2">
+                    {entriesForDate.map(entry => (
+                      <label key={entry.id} className="flex items-center gap-3 p-2 rounded hover:bg-white cursor-pointer">
+                        <input
+                          type="radio"
+                          name="featured"
+                          value={entry.id}
+                          checked={entry.id === editingId ? featured : false}
+                          onChange={async () => {
+                            if (entry.id === editingId) {
+                              setFeatured(true)
+                            }
+                            await supabase
+                              .from('diary_entries')
+                              .update({ featured: false })
+                              .eq('user_id', authUser!.id)
+                              .eq('date', date)
+                              .neq('id', entry.id)
+                          }}
+                          className="w-4 h-4"
+                        />
+                        <span className="text-sm">
+                          {entry.title || `Entry on ${date}`}
+                          <span className="text-xs text-gray-500 ml-2">({entry.status})</span>
+                        </span>
+                        {entry.featured && (
+                          <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded">
+                            Currently Featured
+                          </span>
+                        )}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-bold uppercase tracking-wider mb-2">
+                  Visibility
+                </label>
+                <select
+                  value={unlisted ? 'unlisted' : 'listed'}
+                  onChange={(e) => setUnlisted(e.target.value === 'unlisted')}
+                  className="w-full design-input"
+                >
+                  <option value="listed">Listed (shows on calendar if featured)</option>
+                  <option value="unlisted">Unlisted (hidden from calendar, direct link works)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold uppercase tracking-wider mb-2">
+                  Status
+                </label>
+                <select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value as 'draft' | 'published')}
+                  className="w-full design-input"
+                >
+                  <option value="draft">Draft</option>
+                  <option value="published">Published</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="p-4 bg-blue-50 text-blue-800 text-sm rounded mb-4">
+              <p className="font-bold mb-1">📌 Featured Entry Rules:</p>
+              <ul className="list-disc list-inside space-y-1 text-xs">
+                <li>Only <strong>published</strong> entries can be featured</li>
+                <li>If unlisted, entry won't show on calendar even if featured</li>
+                <li>Only ONE entry per date can be featured</li>
+              </ul>
+            </div>
+
             <div>
               <label className="block text-sm font-bold uppercase tracking-wider mb-2">
                 Title
@@ -379,7 +489,6 @@ export default function AdminPage() {
               {photoUrls.length > 0 && (
                 <div className="grid grid-cols-3 gap-2 mt-2">
                   {photoUrls.map((url, i) => (
-                    /* eslint-disable-next-line @next/next/no-img-element */
                     <div key={i} className="relative aspect-square">
                       <img src={url} alt="" className="w-full h-full object-cover rounded" />
                       <button
@@ -524,27 +633,11 @@ export default function AdminPage() {
               )}
             </div>
 
-            <div>
-              <label className="block text-sm font-bold uppercase tracking-wider mb-2">
-                Visibility
-              </label>
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={unlisted}
-                  onChange={(e) => setUnlisted(e.target.checked)}
-                  className="rounded border-gray-300"
-                />
-                <span>Unlisted (hidden from calendar, accessible via direct link)</span>
-              </label>
-            </div>
-
             <div className="flex gap-3 mt-8">
               <button
                 type="button"
                 onClick={async () => {
                   setStatus('draft')
-                  // Wait for state to update, then save with explicit draft status
                   await new Promise(resolve => setTimeout(resolve, 0))
                   handleSaveWithStatus('draft')
                 }}
@@ -554,26 +647,13 @@ export default function AdminPage() {
                 {loading ? 'Saving...' : 'Save as Draft'}
               </button>
               {editingId && (
-                <div className="flex gap-2">
-                  <Link
-                    href={`/entry/${editingId}`}
-                    target="_blank"
-                    className="bg-gray-800 text-white px-4 py-3 rounded font-bold uppercase tracking-wider hover:bg-gray-900 disabled:opacity-50 text-sm"
-                  >
-                    View Entry
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const url = `${window.location.origin}/entry/${editingId}`
-                      navigator.clipboard.writeText(url)
-                      setMessage('Link copied to clipboard!')
-                    }}
-                    className="bg-purple-900 text-white px-4 py-3 rounded font-bold uppercase tracking-wider hover:bg-purple-800 disabled:opacity-50 text-sm"
-                  >
-                    Copy Link
-                  </button>
-                </div>
+                <Link
+                  href={`/entry/${editingId}`}
+                  target="_blank"
+                  className="bg-gray-800 text-white px-4 py-3 rounded font-bold uppercase tracking-wider hover:bg-gray-900 disabled:opacity-50 text-sm"
+                >
+                  Preview
+                </Link>
               )}
               <button
                 type="submit"
