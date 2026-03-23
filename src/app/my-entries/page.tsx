@@ -495,8 +495,17 @@ export default function MyEntriesPage() {
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">🌟 Featured Entry</label>
                     <div className="p-3 bg-gray-50 rounded">
-                      <p className="text-xs text-gray-600 mb-2">{(window as any).__entriesForDate.length} entr{(window as any).__entriesForDate.length === 1 ? 'y' : 'ies'} for this date.</p>
+                      <p className="text-xs text-gray-600 mb-2">{(window as any).__entriesForDate.length} entr{(window as any).__entriesForDate.length === 1 ? 'y' : 'ies'} for this date. Choose which one shows on calendar, or none.</p>
                       <div className="space-y-2">
+                        {/* None option */}
+                        <label className="flex items-center gap-3 p-2 rounded hover:bg-white cursor-pointer">
+                          <input type="radio" name="edit-featured" value="none" checked={!editFeatured} onChange={async () => {
+                            setEditFeatured(false)
+                            await supabase.from('diary_entries').update({ featured: false }).eq('user_id', authUser!.id).eq('date', entries.find(e => e.id === editingId)?.date || '')
+                          }} className="w-4 h-4" />
+                          <span className="text-sm">None (hide all entries for this date from calendar)</span>
+                        </label>
+                        {/* Entry options */}
                         {(window as any).__entriesForDate.map((entry: {id: string, title?: string, status: string, featured: boolean}) => (
                           <label key={entry.id} className="flex items-center gap-3 p-2 rounded hover:bg-white cursor-pointer">
                             <input type="radio" name="edit-featured" value={entry.id} checked={entry.id === editingId ? editFeatured : false} onChange={async () => {

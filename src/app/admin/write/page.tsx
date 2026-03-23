@@ -369,9 +369,31 @@ export default function AdminPage() {
                 </label>
                 <div className="design-card rounded-none p-4 bg-gray-50">
                   <p className="text-xs text-gray-600 mb-3">
-                    {entriesForDate.length} entr{entriesForDate.length === 1 ? 'y' : 'ies'} for this date. Only one can be featured.
+                    {entriesForDate.length} entr{entriesForDate.length === 1 ? 'y' : 'ies'} for this date. Choose which one shows on calendar, or none.
                   </p>
                   <div className="space-y-2">
+                    {/* None option */}
+                    <label className="flex items-center gap-3 p-2 rounded hover:bg-white cursor-pointer">
+                      <input
+                        type="radio"
+                        name="featured"
+                        value="none"
+                        checked={!featured}
+                        onChange={async () => {
+                          setFeatured(false)
+                          await supabase
+                            .from('diary_entries')
+                            .update({ featured: false })
+                            .eq('user_id', authUser!.id)
+                            .eq('date', date)
+                        }}
+                        className="w-4 h-4"
+                      />
+                      <span className="text-sm">
+                        None (hide all entries for this date from calendar)
+                      </span>
+                    </label>
+                    {/* Entry options */}
                     {entriesForDate.map(entry => (
                       <label key={entry.id} className="flex items-center gap-3 p-2 rounded hover:bg-white cursor-pointer">
                         <input
@@ -396,7 +418,7 @@ export default function AdminPage() {
                           {entry.title || `Entry on ${date}`}
                           <span className="text-xs text-gray-500 ml-2">({entry.status})</span>
                         </span>
-                        {entry.featured && (
+                        {entry.featured && entry.id !== editingId && (
                           <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded">
                             Currently Featured
                           </span>
