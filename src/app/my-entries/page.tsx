@@ -340,24 +340,35 @@ export default function MyEntriesPage() {
                 </div>
                 
                 <div className="flex gap-3 pl-4">
-                  <button
-                    onClick={() => {
-                      window.open(`/entry/${entry.id}`, '_blank')
-                    }}
-                    className="text-xs font-bold uppercase tracking-wider hover:text-black"
-                  >
-                    View Entry
-                  </button>
-                  <button
-                    onClick={() => {
-                      const url = `${window.location.origin}/entry/${entry.id}`
-                      navigator.clipboard.writeText(url)
-                      alert('Link copied to clipboard!')
-                    }}
-                    className="text-xs font-bold uppercase tracking-wider text-purple-700 hover:text-purple-800"
-                  >
-                    Copy Link
-                  </button>
+                  {entry.status === 'published' ? (
+                    <>
+                      <button
+                        onClick={() => {
+                          window.open(`/entry/${entry.id}`, '_blank')
+                        }}
+                        className="text-xs font-bold uppercase tracking-wider hover:text-black"
+                      >
+                        View Entry
+                      </button>
+                      <button
+                        onClick={() => {
+                          const url = `${window.location.origin}/entry/${entry.id}`
+                          navigator.clipboard.writeText(url)
+                          alert('Link copied to clipboard!')
+                        }}
+                        className="text-xs font-bold uppercase tracking-wider text-purple-700 hover:text-purple-800"
+                      >
+                        Copy Link
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => handlePreview(entry)}
+                      className="text-xs font-bold uppercase tracking-wider hover:text-black"
+                    >
+                      Preview
+                    </button>
+                  )}
                   <button
                     onClick={() => handleEdit(entry)}
                     className="text-xs font-bold uppercase tracking-wider hover:text-black"
