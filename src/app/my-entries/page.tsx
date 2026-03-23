@@ -15,6 +15,7 @@ interface DiaryEntry {
   video_urls?: string[]
   spotify_urls?: string[]
   status?: 'draft' | 'published'
+  unlisted?: boolean
   created_at: string
 }
 
@@ -23,7 +24,7 @@ export default function MyEntriesPage() {
   const [authUser, setAuthUser] = useState<{ id: string; email: string } | null>(null)
   const [entries, setEntries] = useState<DiaryEntry[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'all' | 'published' | 'drafts'>('all')
+  const [activeTab, setActiveTab] = useState<'all' | 'published' | 'drafts' | 'unlisted'>('all')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [previewEntry, setPreviewEntry] = useState<DiaryEntry | null>(null)
   const [editTitle, setEditTitle] = useState('')
@@ -205,8 +206,9 @@ export default function MyEntriesPage() {
 
   const filteredEntries = entries.filter(entry => {
     if (activeTab === 'all') return true
-    if (activeTab === 'published') return entry.status === 'published'
+    if (activeTab === 'published') return entry.status === 'published' && !entry.unlisted
     if (activeTab === 'drafts') return entry.status === 'draft'
+    if (activeTab === 'unlisted') return entry.unlisted === true
     return true
   })
 
@@ -244,7 +246,15 @@ export default function MyEntriesPage() {
               activeTab === 'published' ? 'bg-black text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
             }`}
           >
-            Published ({entries.filter(e => e.status === 'published').length})
+            Published ({entries.filter(e => e.status === 'published' && !e.unlisted).length})
+          </button>
+          <button
+            onClick={() => setActiveTab('unlisted')}
+            className={`px-4 py-2 text-sm rounded font-bold uppercase tracking-wider ${
+              activeTab === 'unlisted' ? 'bg-purple-900 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}
+          >
+            Unlisted ({entries.filter(e => e.unlisted).length})
           </button>
           <button
             onClick={() => setActiveTab('drafts')}
@@ -287,12 +297,17 @@ export default function MyEntriesPage() {
                   )}
                   
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <span className={`text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded ${
                         entry.status === 'published' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-700'
                       }`}>
                         {entry.status === 'published' ? 'Published' : 'Draft'}
                       </span>
+                      {entry.unlisted && (
+                        <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-purple-900 text-white">
+                          Unlisted
+                        </span>
+                      )}
                       <span className="text-xs text-gray-500">
                         {new Date(entry.date).toLocaleDateString('en-US', { 
                           month: 'short', 
@@ -326,10 +341,22 @@ export default function MyEntriesPage() {
                 
                 <div className="flex gap-3 pl-4">
                   <button
-                    onClick={() => handlePreview(entry)}
+                    onClick={() => {
+                      window.open(`/entry/${entry.id}`, '_blank')
+                    }}
                     className="text-xs font-bold uppercase tracking-wider hover:text-black"
                   >
-                    Preview
+                    View Entry
+                  </button>
+                  <button
+                    onClick={() => {
+                      const url = `${window.location.origin}/entry/${entry.id}`
+                      navigator.clipboard.writeText(url)
+                      alert('Link copied to clipboard!')
+                    }}
+                    className="text-xs font-bold uppercase tracking-wider text-purple-700 hover:text-purple-800"
+                  >
+                    Copy Link
                   </button>
                   <button
                     onClick={() => handleEdit(entry)}
