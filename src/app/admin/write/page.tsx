@@ -554,13 +554,26 @@ export default function AdminPage() {
                 {loading ? 'Saving...' : 'Save as Draft'}
               </button>
               {editingId && (
-                <Link
-                  href={`/entry/${editingId}`}
-                  target="_blank"
-                  className="bg-gray-800 text-white px-4 py-3 rounded font-bold uppercase tracking-wider hover:bg-gray-900 disabled:opacity-50 text-sm"
-                >
-                  Preview
-                </Link>
+                <div className="flex gap-2">
+                  <Link
+                    href={`/entry/${editingId}`}
+                    target="_blank"
+                    className="bg-gray-800 text-white px-4 py-3 rounded font-bold uppercase tracking-wider hover:bg-gray-900 disabled:opacity-50 text-sm"
+                  >
+                    View Entry
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const url = `${window.location.origin}/entry/${editingId}`
+                      navigator.clipboard.writeText(url)
+                      setMessage('Link copied to clipboard!')
+                    }}
+                    className="bg-purple-900 text-white px-4 py-3 rounded font-bold uppercase tracking-wider hover:bg-purple-800 disabled:opacity-50 text-sm"
+                  >
+                    Copy Link
+                  </button>
+                </div>
               )}
               <button
                 type="submit"
