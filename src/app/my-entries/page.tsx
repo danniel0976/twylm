@@ -366,8 +366,9 @@ export default function MyEntriesPage() {
                       <button
                         onClick={() => window.open(`/entry/${entry.id}`, '_blank')}
                         className="text-xs font-bold uppercase tracking-wider hover:text-black"
+                        title="View entry (works for unlisted too!)"
                       >
-                        View
+                        View Entry
                       </button>
                       <button
                         onClick={() => {
@@ -376,6 +377,7 @@ export default function MyEntriesPage() {
                           alert('Link copied!')
                         }}
                         className="text-xs font-bold uppercase tracking-wider text-purple-700 hover:text-purple-800"
+                        title="Copy direct link (share unlisted entries)"
                       >
                         Copy Link
                       </button>
