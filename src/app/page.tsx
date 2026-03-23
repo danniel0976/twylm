@@ -29,11 +29,12 @@ export default function HomePage() {
   useEffect(() => {
     const loadEntries = async () => {
       try {
-        // Only load published entries (not drafts)
+        // Only load published entries (not drafts), exclude unlisted from calendar
         const { data, error } = await supabase
           .from('diary_entries')
           .select('*')
           .eq('status', 'published')
+          .eq('unlisted', false)  // Hide unlisted entries from calendar
           .order('date', { ascending: false })
 
         if (error) throw error

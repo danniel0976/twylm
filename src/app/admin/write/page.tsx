@@ -17,6 +17,7 @@ export default function AdminPage() {
   const [youtubeUrls, setYoutubeUrls] = useState<string[]>([])
   const [spotifyUrls, setSpotifyUrls] = useState<string[]>([])
   const [status, setStatus] = useState<'draft' | 'published'>('draft')
+  const [unlisted, setUnlisted] = useState(false)
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
@@ -62,6 +63,7 @@ export default function AdminPage() {
         setYoutubeUrls((data.video_urls || []).filter(u => u.includes('youtube.com') || u.includes('youtu.be')))
         setSpotifyUrls(data.spotify_urls || [])
         setStatus(data.status || 'draft')
+        setUnlisted(data.unlisted || false)
       }
     } catch (err) {
       console.error('Failed to load entry for edit:', err)
@@ -115,6 +117,7 @@ export default function AdminPage() {
             video_urls: allVideoUrls,
             spotify_urls: spotifyUrls,
             status: saveStatus,
+            unlisted,
           })
           .eq('id', editingId)
           .select()
@@ -136,6 +139,7 @@ export default function AdminPage() {
             video_urls: allVideoUrls,
             spotify_urls: spotifyUrls,
             status: saveStatus,
+            unlisted,
           })
           .select()
           .single()
@@ -518,6 +522,21 @@ export default function AdminPage() {
                   })}
                 </div>
               )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold uppercase tracking-wider mb-2">
+                Visibility
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={unlisted}
+                  onChange={(e) => setUnlisted(e.target.checked)}
+                  className="rounded border-gray-300"
+                />
+                <span>Unlisted (hidden from calendar, accessible via direct link)</span>
+              </label>
             </div>
 
             <div className="flex gap-3 mt-8">
