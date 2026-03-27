@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 import Header from '@/components/Header'
+import imageCompression from 'browser-image-compression'
 
 interface DiaryEntry {
   id: string
@@ -177,13 +178,27 @@ export default function MyEntriesPage() {
     
     setUploading(true)
     const file = e.target.files[0]
-    const fileExt = file.name.split('.').pop()
-    const fileName = `${Date.now()}-${Math.random()}.${fileExt}`
+    const originalSize = (file.size / 1024 / 1024).toFixed(2)
     
     try {
+      // Compression options
+      const options = {
+        maxSizeMB: 0.5,           // Target max 500KB
+        maxWidthOrHeight: 1200,   // Resize if larger than 1200px
+        useWebWorker: true,       // Use web worker for better performance
+        fileType: 'image/jpeg',   // Convert to JPEG for better compression
+      }
+      
+      // Compress the image
+      const compressedFile = await imageCompression(file, options)
+      const compressedSize = (compressedFile.size / 1024 / 1024).toFixed(2)
+      
+      const fileExt = 'jpg'
+      const fileName = `${Date.now()}-${Math.random()}.${fileExt}`
+      
       const { error: uploadError } = await supabase.storage
         .from('diary-photos')
-        .upload(fileName, file)
+        .upload(fileName, compressedFile)
       
       if (uploadError) throw uploadError
       
@@ -192,6 +207,7 @@ export default function MyEntriesPage() {
         .getPublicUrl(fileName)
       
       setEditPhotoUrls([...editPhotoUrls, publicUrl])
+      console.log(`Photo compressed: ${originalSize} MB → ${compressedSize} MB`)
     } catch (err) {
       console.error('Failed to upload photo:', err)
     } finally {

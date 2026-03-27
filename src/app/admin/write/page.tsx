@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 import Header from '@/components/Header'
+import imageCompression from 'browser-image-compression'
 
 export default function AdminPage() {
   const router = useRouter()
@@ -234,15 +235,29 @@ export default function AdminPage() {
     
     setUploading(true)
     const file = e.target.files[0]
-    setMessage(`Uploading: ${file.name} (${(file.size / 1024).toFixed(1)} KB)...`)
-    
-    const fileExt = file.name.split('.').pop()
-    const fileName = `${Date.now()}-${Math.random()}.${fileExt}`
+    const originalSize = (file.size / 1024 / 1024).toFixed(2)
+    setMessage(`Compressing: ${file.name} (${originalSize} MB)...`)
     
     try {
+      // Compression options
+      const options = {
+        maxSizeMB: 0.5,           // Target max 500KB
+        maxWidthOrHeight: 1200,   // Resize if larger than 1200px
+        useWebWorker: true,       // Use web worker for better performance
+        fileType: 'image/jpeg',   // Convert to JPEG for better compression
+      }
+      
+      // Compress the image
+      const compressedFile = await imageCompression(file, options)
+      const compressedSize = (compressedFile.size / 1024 / 1024).toFixed(2)
+      setMessage(`Uploading: ${file.name} (${originalSize} MB → ${compressedSize} MB)...`)
+      
+      const fileExt = 'jpg'
+      const fileName = `${Date.now()}-${Math.random()}.${fileExt}`
+      
       const { error: uploadError } = await supabase.storage
         .from('diary-photos')
-        .upload(fileName, file)
+        .upload(fileName, compressedFile)
       
       if (uploadError) throw uploadError
       
@@ -251,7 +266,7 @@ export default function AdminPage() {
         .getPublicUrl(fileName)
       
       setPhotoUrls([...photoUrls, publicUrl])
-      setMessage('✅ Photo uploaded!')
+      setMessage(`✅ Photo uploaded! (${originalSize} MB → ${compressedSize} MB)`)
     } catch (err) {
       setMessage(`❌ Failed: ${(err as Error).message}`)
     } finally {

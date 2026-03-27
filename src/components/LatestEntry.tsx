@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 
 interface DiaryEntry {
   id: string
@@ -58,11 +59,12 @@ export default function LatestEntry({ entries }: TodaysEntryProps) {
         {/* Hero Thumbnail */}
         {entry.photo_urls?.length ? (
           <div className="relative aspect-[4/5] bg-gray-900">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <Image
               src={entry.photo_urls[0]}
-              alt="Today's entry"
-              className="w-full h-full object-cover"
+              alt="Latest entry"
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, 600px"
               onError={(e) => {
                 e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="500"%3E%3Crect fill="%23ddd" width="400" height="500"/%3E%3Ctext fill="%23999" x="50%25" y="50%25" text-anchor="middle"%3ENo Image%3C/text%3E%3C/svg%3E'
               }}

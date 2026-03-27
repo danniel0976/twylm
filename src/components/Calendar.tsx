@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 
 interface DiaryEntry {
   id: string
@@ -132,11 +133,12 @@ export default function Calendar({ selectedDate, entries, onDateSelect }: Calend
           }`}
         >
           {entry?.photo_urls?.length ? (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img
+            <Image
               src={entry.photo_urls[photoIndex]}
               alt="Entry thumbnail"
-              className="absolute inset-0 w-full h-full object-cover"
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, 200px"
               onError={(e) => {
                 e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23ddd" width="200" height="200"/%3E%3Ctext fill="%23999" x="50%25" y="50%25" text-anchor="middle"%3E💚%3C/text%3E%3C/svg%3E'
               }}
