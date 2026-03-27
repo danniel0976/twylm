@@ -72,8 +72,9 @@ export default function Header() {
           Love Like No Tomorrow
         </Link>
         <button 
-          className="text-purple-300 hover:text-white"
+          className="text-purple-300 hover:text-white active:text-purple-300 focus:text-purple-300 transition-colors"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          style={{ WebkitTapHighlightColor: 'transparent' }}
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             {mobileMenuOpen ? (
