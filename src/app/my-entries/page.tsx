@@ -28,6 +28,7 @@ export default function MyEntriesPage() {
   const [activeTab, setActiveTab] = useState<'all' | 'published' | 'drafts' | 'unlisted'>('all')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [previewEntry, setPreviewEntry] = useState<DiaryEntry | null>(null)
+  const [editDate, setEditDate] = useState('')
   const [editTitle, setEditTitle] = useState('')
   const [editContent, setEditContent] = useState('')
   const [editPhotoUrls, setEditPhotoUrls] = useState<string[]>([])
@@ -86,6 +87,7 @@ export default function MyEntriesPage() {
 
   const handleEdit = (entry: DiaryEntry) => {
     setEditingId(entry.id)
+    setEditDate(entry.date)
     setEditTitle(entry.title || '')
     setEditContent(entry.content || '')
     setEditPhotoUrls(entry.photo_urls || [])
@@ -138,6 +140,7 @@ export default function MyEntriesPage() {
       const { error } = await supabase
         .from('diary_entries')
         .update({ 
+          date: editDate,
           title: editTitle,
           content: editContent,
           photo_urls: editPhotoUrls,
@@ -152,6 +155,7 @@ export default function MyEntriesPage() {
       if (error) throw error
       setEntries(entries.map(e => e.id === editingId ? { 
         ...e, 
+        date: editDate,
         title: editTitle,
         content: editContent,
         photo_urls: editPhotoUrls,
@@ -484,6 +488,20 @@ export default function MyEntriesPage() {
               <h2 className="text-headline mb-4">Edit Entry</h2>
               <div className="space-y-4">
                 <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Date</label>
+                  <input
+                    type="date"
+                    value={editDate}
+                    onChange={(e) => {
+                      setEditDate(e.target.value)
+                      loadEntriesForDate(e.target.value)
+                    }}
+                    min="2026-03-12"
+                    max="2026-04-09"
+                    className="w-full design-input"
+                  />
+                </div>
+                <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Title</label>
                   <input type="text" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className="w-full design-input" placeholder="Entry title" />
                 </div>
@@ -515,7 +533,7 @@ export default function MyEntriesPage() {
                         <label className="flex items-center gap-3 p-2 rounded hover:bg-white cursor-pointer">
                           <input type="radio" name="edit-featured" value="none" checked={!editFeatured} onChange={async () => {
                             setEditFeatured(false)
-                            await supabase.from('diary_entries').update({ featured: false }).eq('user_id', authUser!.id).eq('date', entries.find(e => e.id === editingId)?.date || '')
+                            await supabase.from('diary_entries').update({ featured: false }).eq('user_id', authUser!.id).eq('date', editDate)
                           }} className="w-4 h-4" />
                           <span className="text-sm">None (hide all entries for this date from calendar)</span>
                         </label>
@@ -524,7 +542,7 @@ export default function MyEntriesPage() {
                           <label key={entry.id} className="flex items-center gap-3 p-2 rounded hover:bg-white cursor-pointer">
                             <input type="radio" name="edit-featured" value={entry.id} checked={entry.id === editingId ? editFeatured : false} onChange={async () => {
                               if (entry.id === editingId) { setEditFeatured(true) }
-                              await supabase.from('diary_entries').update({ featured: false }).eq('user_id', authUser!.id).eq('date', entries.find(e => e.id === editingId)?.date || '').neq('id', entry.id)
+                              await supabase.from('diary_entries').update({ featured: false }).eq('user_id', authUser!.id).eq('date', editDate).neq('id', entry.id)
                             }} className="w-4 h-4" />
                             <span className="text-sm">{entry.title || `Entry`} <span className="text-xs text-gray-500 ml-2">({entry.status})</span></span>
                             {entry.featured && entry.id !== editingId && (<span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded">Currently Featured</span>)}
@@ -588,7 +606,7 @@ export default function MyEntriesPage() {
               </div>
               <div className="flex gap-3 mt-6">
                 <button onClick={() => setEditingId(null)} className="bg-gray-200 text-gray-700 px-4 py-3 rounded font-bold uppercase tracking-wider hover:bg-gray-300 text-sm">Cancel</button>
-                <button type="button" onClick={() => { setEditingId(null); setPreviewEntry({ id: editingId, date: editTitle ? editTitle : entries.find(e => e.id === editingId)?.date || '', title: editTitle, content: editContent, photo_urls: editPhotoUrls, video_urls: editVideoUrls, spotify_urls: editSpotifyUrls, status: editStatus, created_at: entries.find(e => e.id === editingId)?.created_at || '' }) }} disabled={uploading} className="bg-gray-800 text-white px-4 py-3 rounded font-bold uppercase tracking-wider hover:bg-gray-900 text-sm">Preview</button>
+                <button type="button" onClick={() => { setEditingId(null); setPreviewEntry({ id: editingId, date: editDate, title: editTitle, content: editContent, photo_urls: editPhotoUrls, video_urls: editVideoUrls, spotify_urls: editSpotifyUrls, status: editStatus, created_at: entries.find(e => e.id === editingId)?.created_at || '' }) }} disabled={uploading} className="bg-gray-800 text-white px-4 py-3 rounded font-bold uppercase tracking-wider hover:bg-gray-900 text-sm">Preview</button>
                 <button type="button" onClick={() => { setEditStatus('draft'); handleSaveEdit() }} disabled={uploading} className="bg-gray-200 text-gray-700 px-4 py-3 rounded font-bold uppercase tracking-wider hover:bg-gray-300 text-sm">Unpublish</button>
                 <button type="button" onClick={() => { setEditStatus('published'); handleSaveEdit() }} disabled={uploading} className="flex-1 design-button disabled:opacity-50 text-sm">{uploading ? 'Publishing...' : 'Publish'}</button>
               </div>
