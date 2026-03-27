@@ -24,16 +24,29 @@ export default function CheeseMascot() {
   }, [])
 
   // Cycle through 4 walk frames - frame 4 (looking at user) appears rarely
+  // Sequence is always complete: 1>2>3>4 or 1>2>3>1, never skip frame 4 mid-cycle
   useEffect(() => {
+    let skipFrame4 = false
+    
     const frameInterval = setInterval(() => {
       setCurrentFrame((prev) => {
-        const next = (prev + 1) % 4
-        // Skip frame 4 (index 3) 80% of the time - stay on frame 3 instead
-        // Only show frame 4 (looking at user) 20% of the time
-        if (next === 3 && Math.random() > 0.2) {
-          return 2 // Stay on frame 3 (last walking frame)
+        // When at frame 3 (index 2), decide whether to show frame 4 or loop to 1
+        if (prev === 2) {
+          // Decide at the START of the cycle (when transitioning from frame 3)
+          skipFrame4 = Math.random() > 0.2 // 80% chance to skip frame 4
+          if (skipFrame4) {
+            return 0 // Loop back to frame 1 (sequence: 1>2>3>1)
+          }
+          return 3 // Continue to frame 4 (sequence: 1>2>3>4)
         }
-        return next
+        
+        // When at frame 4 (index 3), always loop to frame 1
+        if (prev === 3) {
+          return 0
+        }
+        
+        // Otherwise, just advance to next frame
+        return prev + 1
       })
     }, 200) // 200ms per frame
 
