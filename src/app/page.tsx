@@ -6,7 +6,7 @@ import Calendar from '@/components/Calendar'
 import Header from '@/components/Header'
 import SpotifyLastPlayed from '@/components/SpotifyLastPlayed'
 import CheeseMascot from '@/components/CheeseMascot'
-import TodaysEntry from '@/components/TodaysEntry'
+import LatestEntry from '@/components/LatestEntry'
 
 interface DiaryEntry {
   id: string
@@ -156,8 +156,8 @@ export default function HomePage() {
           <CheeseMascot />
         </div>
 
-        {/* Today's Entry Hero - Mobile Only */}
-        {!loading && <TodaysEntry entries={entries} />}
+        {/* Latest Entry Hero - Mobile Only */}
+        {!loading && <LatestEntry entries={entries} />}
 
         {loading ? (
           <p className="text-gray-600 text-center">Loading calendar...</p>

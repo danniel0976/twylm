@@ -12,26 +12,35 @@ interface DiaryEntry {
   video_urls?: string[]
   spotify_urls?: string[]
   user_name?: string
+  created_at: string
 }
 
 interface TodaysEntryProps {
   entries: Record<string, DiaryEntry>
 }
 
-export default function TodaysEntry({ entries }: TodaysEntryProps) {
-  // Get today's date in YYYY-MM-DD format
-  const today = new Date()
-  const todayStr = today.toISOString().split('T')[0]
+export default function LatestEntry({ entries }: TodaysEntryProps) {
+  // Find the latest entry by created_at timestamp
+  const entryArray = Object.values(entries)
   
-  // Check for entry (Dan's priority, then Luke's)
-  const danEntry = entries[todayStr]
-  const lukeEntry = entries[todayStr + '_luke']
-  const entry = danEntry || lukeEntry
+  if (entryArray.length === 0) {
+    return null // No entries at all, don't show the section
+  }
   
-  if (!entry) {
-    return null // No entry today, don't show the section
+  // Sort by created_at descending and get the most recent
+  const latestEntry = entryArray.sort((a, b) => {
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  })[0]
+  
+  if (!latestEntry) {
+    return null
   }
 
+  // Check if there's a dual entry situation (Dan + Luke same date)
+  const dateKey = latestEntry.date
+  const danEntry = entries[dateKey]
+  const lukeEntry = entries[dateKey + '_luke']
+  const entry = danEntry || lukeEntry
   const hasBothEntries = danEntry && lukeEntry
 
   // Helper functions for counting media
@@ -92,7 +101,7 @@ export default function TodaysEntry({ entries }: TodaysEntryProps) {
             </span>
             <div>
               <p className="text-xs font-bold uppercase tracking-wider text-gray-500">
-                Today's Entry
+                Latest Entry
               </p>
               <p className="text-sm text-gray-600">
                 {entry.user_name || 'Unknown'} • {new Date(entry.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
