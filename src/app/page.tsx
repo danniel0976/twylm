@@ -85,7 +85,7 @@ export default function HomePage() {
   const [seconds, setSeconds] = useState(0)
 
   useEffect(() => {
-    const targetDate = new Date('2026-04-02T00:00:00')
+    const targetDate = new Date('2026-04-03T00:00:00')
     
     const updateCountdown = () => {
       const now = new Date()

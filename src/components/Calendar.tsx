@@ -35,9 +35,9 @@ export default function Calendar({ selectedDate, entries, onDateSelect }: Calend
     marchDates.push(`2026-03-${String(i).padStart(2, '0')}`)
   }
 
-  // April 1-2, 2026
+  // April 1-3, 2026
   const aprilDates = []
-  for (let i = 1; i <= 2; i++) {
+  for (let i = 1; i <= 3; i++) {
     aprilDates.push(`2026-04-${String(i).padStart(2, '0')}`)
   }
 
