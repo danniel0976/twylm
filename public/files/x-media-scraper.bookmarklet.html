@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>X Media Scraper - Bookmarklet</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; padding: 40px; max-width: 700px; margin: 0 auto; }
+    .bookmarklet { background: #1DA1F2; color: white; padding: 15px 20px; border-radius: 8px; text-decoration: none; display: inline-block; margin: 20px 0; font-weight: bold; }
+    .bookmarklet:hover { background: #1a91da; }
+    code { background: #f4f4f4; padding: 2px 6px; border-radius: 4px; }
+    ol { line-height: 2; }
+    .warning { background: #fff3cd; border: 1px solid #ffc107; padding: 15px; border-radius: 8px; margin: 20px 0; }
+  </style>
+</head>
+<body>
+  <h1>📸 X Media Scraper</h1>
+  <p>Downloads all images/videos from a user's profile while you browse.</p>
+  
+  <h2>How to Use:</h2>
+  <ol>
+    <li><strong>Drag the blue button</strong> to your bookmarks bar</li>
+    <li>Go to any X profile: <code>https://twitter.com/USERNAME</code> or <code>https://twitter.com/USERNAME/media</code></li>
+    <li><strong>Click the bookmarklet</strong> - it will auto-scroll and collect media</li>
+    <li>When done, a ZIP file downloads with all media</li>
+  </ol>
+  
+  <h2>📥 Bookmarklet:</h2>
+  <a class="bookmarklet" href="javascript:(function(){(async function scrapeMedia(){const username=window.location.pathname.split('/')[1];if(!username){alert('❌ Go to a profile page first!');return;}console.log('🐺 X Media Scraper starting for @'+username);const mediaUrls=new Set();let lastCount=0;let scrollAttempts=0;const maxScrolls=100;function extractMedia(){document.querySelectorAll('[data-testid="tweet"]').forEach(tweet=>{tweet.querySelectorAll('img[src*="twimg.com"]').forEach(img=>{const url=img.src.split('?')[0];if(url.includes('media'))mediaUrls.add(url);});tweet.querySelectorAll('video[src*="twimg.com"]').forEach(vid=>mediaUrls.add(vid.src));});}while(scrollAttempts<maxScrolls){extractMedia();console.log(`Scroll ${scrollAttempts}: ${mediaUrls.size} media found`);if(mediaUrls.size===lastCount&&scrollAttempts>10){console.log('No new media - likely reached end');break;}lastCount=mediaUrls.size;scrollAttempts++;window.scrollTo(0,document.body.scrollHeight);await new Promise(r=>setTimeout(r,1500));}if(mediaUrls.size===0){alert('📭 No media found. Try scrolling manually first, then run again.');return;}console.log(`✅ Found ${mediaUrls.size} media items`);const content=`# Media from @${username}\n# Scraped: ${new Date().toISOString()}\n\n`+Array.from(mediaUrls).join('\n');const blob=new Blob([content],{type:'text/plain'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`${username}-media-urls-${new Date().toISOString().split('T')[0]}.txt`;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);alert(`🐺 Found ${mediaUrls.size} media items!\n\nDownloaded: ${a.download}\n\nUse a download manager to batch download all URLs.`);})();})();">🔖 Scrape X Media</a>
+  
+  <div class="warning">
+    <strong>⚠️ Important Notes:</strong>
+    <ul>
+      <li>Downloads a <strong>list of URLs</strong> (not the actual files)</li>
+      <li>Use a download manager (wget, curl, browser extension) to batch download</li>
+      <li>For large profiles, may take several minutes</li>
+      <li>X may rate-limit if you scroll too fast</li>
+    </ul>
+  </div>
+  
+  <h2>📥 Batch Download the URLs:</h2>
+  <p>After getting the URL list, use one of these:</p>
+  
+  <h3>Option A: wget (Linux/Mac)</h3>
+  <code>wget -i username-media-urls.txt -O media/</code>
+  
+  <h3>Option B: curl (Linux/Mac)</h3>
+  <code>cat username-media-urls.txt | xargs -n 1 curl -O</code>
+  
+  <h3>Option C: Browser Extension</h3>
+  <p>Install "Simple Mass Downloader" or "DownThemAll!" and import the URLs</p>
+</body>
+</html>
