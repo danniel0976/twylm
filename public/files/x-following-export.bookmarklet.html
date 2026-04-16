@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>X Following Exporter - Bookmarklet</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; padding: 40px; max-width: 600px; margin: 0 auto; }
+    .bookmarklet { background: #1DA1F2; color: white; padding: 15px 20px; border-radius: 8px; text-decoration: none; display: inline-block; margin: 20px 0; font-weight: bold; }
+    .bookmarklet:hover { background: #1a91da; }
+    code { background: #f4f4f4; padding: 2px 6px; border-radius: 4px; }
+    ol { line-height: 2; }
+  </style>
+</head>
+<body>
+  <h1>🐺 X Following List Exporter</h1>
+  
+  <h2>How to Use:</h2>
+  <ol>
+    <li><strong>Drag the blue button below</strong> to your browser's bookmarks bar</li>
+    <li>Go to <code>https://twitter.com/YOUR_USERNAME/following</code></li>
+    <li>Click the bookmarklet while on the page</li>
+    <li>Wait for the scroll to complete (it auto-scrolls through your list)</li>
+    <li>A <code>.txt</code> file will download with all usernames</li>
+  </ol>
+  
+  <h2>📥 Bookmarklet:</h2>
+  <a class="bookmarklet" href="javascript:(function(){(async function extractFollowing(){const usernames=new Set();let lastCount=0;let scrollAttempts=0;const maxScrolls=50;console.log('🐺 X Following Exporter starting...');while(scrollAttempts&lt;maxScrolls){const cards=document.querySelectorAll('[data-testid=&quot;UserCell&quot;]');cards.forEach(card=&gt;{const link=card.querySelector('a[href^=&quot;/&quot;]');if(link){const username=link.getAttribute('href').replace('/','');if(username&amp;&amp;!username.includes('/')){usernames.add(username);}}});console.log(`Scroll ${scrollAttempts}: ${usernames.size} accounts collected`);if(usernames.size===lastCount&amp;&amp;scrollAttempts&gt;5){console.log('No new accounts - likely reached end');break;}lastCount=usernames.size;scrollAttempts++;window.scrollTo(0,document.body.scrollHeight);await new Promise(r=&gt;setTimeout(r,800));}const content=Array.from(usernames).join('\n');const blob=new Blob([content],{type:'text/plain'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`x-following-${new Date().toISOString().split('T')[0]}.txt`;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);console.log(`✅ Exported ${usernames.size} accounts to ${a.download}`);alert(`🐺 Exported ${usernames.size} accounts!\nFile: ${a.download}`);})();})();">🔖 Export X Following List</a>
+  
+  <h2>⚠️ Notes:</h2>
+  <ul>
+    <li>You must be <strong>logged in</strong> to X/Twitter</li>
+    <li>The script will auto-scroll through your entire following list</li>
+    <li>For large lists (1000+), it may take 1-2 minutes</li>
+    <li>X may rate-limit if you scroll too fast (the script has built-in delays)</li>
+  </ul>
+  
+  <h2>Alternative: Copy the JavaScript</h2>
+  <p>If drag-drop doesn't work, create a new bookmark manually:</p>
+  <ol>
+    <li>Right-click bookmarks bar → <strong>Add Page</strong></li>
+    <li>Name: <code>X Following Export</code></li>
+    <li>URL: Paste the JavaScript from <code>scripts/x-following-export.bookmarklet.js</code></li>
+  </ol>
+  
+  <script>
+    // Also log the raw JS for copying
+    console.log('Bookmarklet JS available in scripts/x-following-export.bookmarklet.js');
+  </script>
+</body>
+</html>
