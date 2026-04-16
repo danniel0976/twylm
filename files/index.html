@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>📁 Dan's Files</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 40px 20px;
+      background: #f9f9f9;
+      color: #1a1a1a;
+    }
+    h1 {
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+    .file-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .file-item {
+      background: white;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: box-shadow 0.2s;
+    }
+    .file-item:hover {
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .file-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .file-name {
+      font-weight: 600;
+      color: #1a1a1a;
+      word-break: break-all;
+      margin-bottom: 4px;
+    }
+    .file-meta {
+      font-size: 13px;
+      color: #666;
+    }
+    .file-actions {
+      display: flex;
+      gap: 8px;
+      margin-left: 16px;
+      flex-shrink: 0;
+    }
+    .btn {
+      padding: 8px 16px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .btn-primary {
+      background: #1DA1F2;
+      color: white;
+      border: 1px solid #1DA1F2;
+    }
+    .btn-primary:hover {
+      background: #1a91da;
+    }
+    .btn-secondary {
+      background: white;
+      color: #1a1a1a;
+      border: 1px solid #e0e0e0;
+    }
+    .btn-secondary:hover {
+      background: #f4f4f4;
+    }
+    .icon {
+      font-size: 18px;
+      margin-right: 12px;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #666;
+    }
+    .divider {
+      height: 1px;
+      background: #e0e0e0;
+      margin: 30px 0;
+    }
+    @media (max-width: 600px) {
+      .file-item {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .file-actions {
+        margin-left: 0;
+        margin-top: 12px;
+        width: 100%;
+      }
+      .btn {
+        flex: 1;
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>📁 Dan's Files</h1>
+  <p class="subtitle">Private file drop for Dan • Files uploaded by Chippy 🐺</p>
+  
+  <ul class="file-list" id="fileList">
+    <!-- Files will be listed here -->
+  </ul>
+
+  <script>
+    // File registry - Chippy updates this when adding new files
+    const files = [
+      {
+        name: "x-following-export.bookmarklet.html",
+        description: "X Following Exporter (drag to bookmarks)",
+        type: "Bookmarklet",
+        date: "2026-04-16"
+      },
+      {
+        name: "x-following-export.bookmarklet.js",
+        description: "X Following Exporter (raw JavaScript)",
+        type: "JavaScript",
+        date: "2026-04-16"
+      }
+    ];
+
+    const fileList = document.getElementById('fileList');
+    
+    if (files.length === 0) {
+      fileList.innerHTML = '<div class="empty-state">📭 No files yet<br><small>Chippy will add files here when Dan requests them</small></div>';
+    } else {
+      files.forEach(file => {
+        const li = document.createElement('li');
+        li.className = 'file-item';
+        li.innerHTML = `
+          <div class="file-info">
+            <div class="file-name"><span class="icon">📄</span>${file.name}</div>
+            <div class="file-meta">${file.description} • ${file.type} • Added: ${file.date}</div>
+          </div>
+          <div class="file-actions">
+            <a href="${file.name}" class="btn btn-primary" target="_blank">Open</a>
+            <a href="${file.name}" class="btn btn-secondary" download>Download</a>
+          </div>
+        `;
+        fileList.appendChild(li);
+      });
+    }
+  </script>
+</body>
+</html>
